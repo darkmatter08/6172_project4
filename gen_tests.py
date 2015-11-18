@@ -125,6 +125,8 @@ if __name__ == '__main__':
     exit(0)
   num_tests = int(num_tests)
   test_dir = sys.argv[2]
+  if not test_dir.endswith('/'):
+    test_dir += '/'
   
   print bcolors.OKBLUE + 'Generating %(num_tests)d random tests...' % locals() + bcolors.ENDC
   print bcolors.WARNING + '\tMAX_DEPTH     : ' + str(MAX_DEPTH) + bcolors.ENDC

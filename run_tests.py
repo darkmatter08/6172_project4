@@ -113,6 +113,8 @@ if __name__ == '__main__':
     print_usage()
     exit(0)
   test_dir = sys.argv[2]
+  if not test_dir.endswith('/'):
+    test_dir += '/'
 
   print bcolors.OKBLUE + 'Running Tests...' + bcolors.ENDC
   count = 0  # Track test number
