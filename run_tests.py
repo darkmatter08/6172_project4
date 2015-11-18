@@ -20,6 +20,7 @@ from subprocess import call
 from os import listdir, remove
 
 ## Globals
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -106,7 +107,7 @@ def get_bestmove_path(f_name):
   return path
 
 if __name__ == '__main__':
-  # Get Command-Line Args
+  # Get command-line args
   exe = sys.argv[1]
   if exe == '--help' or exe == '-h':
     print_usage()
@@ -145,4 +146,5 @@ if __name__ == '__main__':
     if not passed:
       print bcolors.FAIL + 'TEST FAILED!' + bcolors.ENDC
       exit(0)
+    count += 1
   print bcolors.OKGREEN + 'ALL TESTS PASSED!' + bcolors.ENDC
