@@ -58,7 +58,6 @@ def print_pass(f_name, stats):
 
 # Find index of element that does not match
 def find_error(l1, l2):
-  assert len(l1) == len(l2)
   for i in range(len(l1)):
     if l1[i] != l2[i]:
       return i
