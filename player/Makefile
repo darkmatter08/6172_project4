@@ -7,18 +7,18 @@ UNAME := $(shell uname)
 ifeq ($(PARALLEL),1)
 	OS_TYPE := Parallel Linux
 	PFLAG := -DPARALLEL -D_BSD_SOURCE -D_XOPEN_SOURCE # -g needed for test framework assertions
-	CFLAGS := -std=gnu99 -Wall -fcilkplus -g
+	CFLAGS := -std=gnu99 -Wall -fcilkplus -g3
 	LDFLAGS= -Wall -lrt -lm -lcilkrts -ldl -lpthread
 else
 ifeq ($(UNAME),Darwin)
 	OS_TYPE := Mac
 	PFLAG := -DMACPORT -D__MACH__ -D_XOPEN_SOURCE
-	CFLAGS := -std=gnu99 -lrt -Wall -DNDEBUG -g
+	CFLAGS := -std=gnu99 -lrt -Wall -DNDEBUG -g3
 	LDFLAGS= -lrt -Wall
 else
 	OS_TYPE := Linux
 	#PFLAG := -D_XOPEN_SOURCE
-	CFLAGS := -std=gnu99 -lrt -Wall -g
+	CFLAGS := -std=gnu99 -lrt -Wall -g3
 	LDFLAGS= -Wall -lm -lrt -ldl -lpthread
 endif
 endif
