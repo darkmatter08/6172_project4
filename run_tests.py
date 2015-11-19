@@ -44,6 +44,11 @@ def print_usage():
   print '\t<test_dir>          : directory of tests to run impl against'
   print '\nNOTE: pass in "--help" or "-h" to see all options' + bcolors.ENDC 
 
+# Print summary of test results
+def print_summary(avg_nps_incr):
+  print '\n' + bcolors.HEADER + 'Summary:' + bcolors.ENDC
+  print '\tAVG_NPS_INCR: ' + str(avg_nps_incr)
+
 # Print for passed test 
 def print_pass(f_name, stats):
   print '[ ' + bcolors.OKGREEN + 'PASS' + bcolors.ENDC + ' ] : ' + f_name
@@ -116,6 +121,8 @@ if __name__ == '__main__':
     test_dir += '/'
 
   print bcolors.OKBLUE + 'Running Tests...' + bcolors.ENDC
+
+  nps_incr = []
   count = 0  # Track test number
   for test_file in listdir(test_dir):
     # Store output of test in intermediate files
@@ -134,6 +141,7 @@ if __name__ == '__main__':
     if ref_result == exe_result:
       # If path explored by both impls is correct, test passes
       stats = {'AVG_NPS':[get_avg_nps(ref_o), get_avg_nps(exe_o)]}
+      nps_incr.append((stats['AVG_NPS'][1] - stats['AVG_NPS'][0]) / float(stats['AVG_NPS'][0]))
       print_pass(test_file, stats)
     else:
       # Else test fails and location of mismatch is shown
@@ -149,3 +157,4 @@ if __name__ == '__main__':
       exit(0)
     count += 1
   print bcolors.OKGREEN + 'ALL TESTS PASSED!' + bcolors.ENDC
+  print_summary(avg(nps_incr))
