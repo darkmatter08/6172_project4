@@ -14,7 +14,7 @@ NUM_COLS = 10
 NUM_PIECES = 16
 PAWNS_PER_SIDE = 7
 
-MAX_DEPTH = 4
+MAX_DEPTH = 6
 
 # Probability that entry is empty given every piece is on the board
 P_EMPTY = 1 - NUM_PIECES / float(NUM_ROWS * NUM_COLS)

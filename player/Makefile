@@ -38,6 +38,11 @@ CFLAGS += $(OTHER_CFLAGS)
 
 LDFLAGS= -Wall -lrt -lm -lcilkrts -ldl -lpthread
 
+ifeq ($(PROF),1)
+  CFLAGS += -DPROFILE_BUILD -pg
+  LDFLAGS += -pg
+endif
+
 .PHONY : default clean
 
 

@@ -106,6 +106,8 @@ def get_bestmove_path(f_name):
     for line in f:
       if line.startswith('info score'):
         path.append(line.rstrip())
+      elif line.startswith('info depth'):
+        path.append(line.rstrip().split(' ')[-3])
   # append the best move found for comparison
   path.append(get_bestmove(f_name))
   return path
@@ -125,6 +127,8 @@ if __name__ == '__main__':
   nps_incr = []
   count = 0  # Track test number
   for test_file in listdir(test_dir):
+    if test_file.startswith('prof'):
+      continue
     # Store output of test in intermediate files
     ref_o = 'ref_result_' + str(count)
     exe_o = 'exe_result_' + str(count)
