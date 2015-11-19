@@ -53,7 +53,7 @@ def print_pass(f_name, stats):
   for stat in ref_stats:
     print '\t\t' + stat[0] + ': ' + str(stat[1])
   print '\tPlayer Impl Stats:'
-  for stat in ref_stats:
+  for stat in exe_stats:
     print '\t\t' + stat[0] + ': ' + str(stat[1])
 
 # Find index of element that does not match
