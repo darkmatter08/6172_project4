@@ -164,34 +164,16 @@ void mark_laser_path(position_t *p, char *laser_map, color_t c,
   }
 }
 
-
 // PAWNPIN Heuristic: count number of pawns that are pinned by the
 //   opposing king's laser --- and are thus immobile.
 
-int pawnpin(position_t *p, color_t color) {
-  color_t c = opp_color(color);
-  char laser_map[ARR_SIZE];
-
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map[i] = 4;   // Invalid square
-  }
-
-  for (fil_t f = 0; f < BOARD_WIDTH; ++f) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; ++r) {
-      laser_map[square_of(f, r)] = 0;
-    }
-  }
-
-  mark_laser_path(p, laser_map, c, 1);  // find path of laser given that you aren't moving
-
-
-
+int pawnpin(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE]) {
   int pinned_pawns = 0;
 
   // Figure out which pawns are not pinned down by the laser.
   for (fil_t f = 0; f < BOARD_WIDTH; ++f) {
     for (rnk_t r = 0; r < BOARD_WIDTH; ++r) {
-      if (laser_map[square_of(f, r)] == 0 &&
+      if (opposite_color_laser_map[square_of(f, r)] == 0 &&
           color_of(p->board[square_of(f, r)]) == color &&
           ptype_of(p->board[square_of(f, r)]) == PAWN) {
         pinned_pawns += 1;
@@ -203,22 +185,7 @@ int pawnpin(position_t *p, color_t color) {
 }
 
 // MOBILITY heuristic: safe squares around king of color color.
-int mobility(position_t *p, color_t color) {
-  color_t c = opp_color(color);
-  char laser_map[ARR_SIZE];
-
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map[i] = 4;   // Invalid square
-  }
-
-  for (fil_t f = 0; f < BOARD_WIDTH; ++f) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; ++r) {
-      laser_map[square_of(f, r)] = 0;
-    }
-  }
-
-  mark_laser_path(p, laser_map, c, 1);  // find path of laser given that you aren't moving
-
+int mobility(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE]) {
   int mobility = 0;
   square_t king_sq = p->kloc[color];
   tbassert(ptype_of(p->board[king_sq]) == KING,
@@ -226,12 +193,12 @@ int mobility(position_t *p, color_t color) {
   tbassert(color_of(p->board[king_sq]) == color,
            "color: %d\n", color_of(p->board[king_sq]));
 
-  if (laser_map[king_sq] == 0) {
+  if (opposite_color_laser_map[king_sq] == 0) {
     mobility++;
   }
   for (int d = 0; d < 8; ++d) {
     square_t sq = king_sq + dir_of(d);
-    if (laser_map[sq] == 0) {
+    if (opposite_color_laser_map[sq] == 0) {
       mobility++;
     }
   }
@@ -251,21 +218,7 @@ float h_dist(square_t a, square_t b) {
 }
 
 // H_SQUARES_ATTACKABLE heuristic: for shooting the enemy king
-int h_squares_attackable(position_t *p, color_t c) {
-  char laser_map[ARR_SIZE];
-
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map[i] = 4;   // Invalid square
-  }
-
-  for (fil_t f = 0; f < BOARD_WIDTH; ++f) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; ++r) {
-      laser_map[square_of(f, r)] = 0;
-    }
-  }
-
-  mark_laser_path(p, laser_map, c, 1);  // 1 = path of laser with no moves
-
+int h_squares_attackable(position_t *p, color_t c, char laser_map[ARR_SIZE]) {
   square_t o_king_sq = p->kloc[opp_color(c)];
   tbassert(ptype_of(p->board[o_king_sq]) == KING,
            "ptype: %d\n", ptype_of(p->board[o_king_sq]));
@@ -354,32 +307,49 @@ score_t eval(position_t *p, bool verbose) {
     }
   }
 
-  ev_score_t w_hattackable = HATTACK * h_squares_attackable(p, WHITE);
+  char laser_map_black[ARR_SIZE];
+  char laser_map_white[ARR_SIZE];
+
+  for (int i = 0; i < ARR_SIZE; ++i) {
+    laser_map_black[i] = 4;   // Invalid square
+    laser_map_white[i] = 4;   // Invalid square
+  }
+
+  for (fil_t f = 0; f < BOARD_WIDTH; ++f) {
+    for (rnk_t r = 0; r < BOARD_WIDTH; ++r) {
+      laser_map_black[square_of(f, r)] = 0;
+      laser_map_white[square_of(f, r)] = 0;
+    }
+  }
+  mark_laser_path(p, laser_map_black, BLACK, 1);
+  mark_laser_path(p, laser_map_white, WHITE, 1);
+
+  ev_score_t w_hattackable = HATTACK * h_squares_attackable(p, WHITE, laser_map_white);
   score[WHITE] += w_hattackable;
   if (verbose) {
     printf("HATTACK bonus %d for White\n", w_hattackable);
   }
-  ev_score_t b_hattackable = HATTACK * h_squares_attackable(p, BLACK);
+  ev_score_t b_hattackable = HATTACK * h_squares_attackable(p, BLACK, laser_map_black);
   score[BLACK] += b_hattackable;
   if (verbose) {
     printf("HATTACK bonus %d for Black\n", b_hattackable);
   }
 
-  int w_mobility = MOBILITY * mobility(p, WHITE);
+  int w_mobility = MOBILITY * mobility(p, WHITE, laser_map_black);
   score[WHITE] += w_mobility;
   if (verbose) {
     printf("MOBILITY bonus %d for White\n", w_mobility);
   }
-  int b_mobility = MOBILITY * mobility(p, BLACK);
+  int b_mobility = MOBILITY * mobility(p, BLACK, laser_map_white);
   score[BLACK] += b_mobility;
   if (verbose) {
     printf("MOBILITY bonus %d for Black\n", b_mobility);
   }
 
   // PAWNPIN Heuristic --- is a pawn immobilized by the enemy laser.
-  int w_pawnpin = PAWNPIN * pawnpin(p, WHITE);
+  int w_pawnpin = PAWNPIN * pawnpin(p, WHITE, laser_map_black);
   score[WHITE] += w_pawnpin;
-  int b_pawnpin = PAWNPIN * pawnpin(p, BLACK);
+  int b_pawnpin = PAWNPIN * pawnpin(p, BLACK, laser_map_white);
   score[BLACK] += b_pawnpin;
 
   // score from WHITE point of view
