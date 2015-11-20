@@ -9,4 +9,4 @@ fi
 cd player/; make clean; make PROF=1; cd ../;
 
 awsrun ./player/leiserchess my_tests/prof$1
-gprof ./player/leiserchess gmon.out
+gprof ./player/leiserchess log.awsrun/gmon.out
