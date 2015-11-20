@@ -171,11 +171,12 @@ int pawnpin(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE
   int pinned_pawns = 0;
 
   // Figure out which pawns are not pinned down by the laser.
-  for (fil_t f = 0; f < BOARD_WIDTH; ++f) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; ++r) {
-      if (opposite_color_laser_map[square_of(f, r)] == 0 &&
-          color_of(p->board[square_of(f, r)]) == color &&
-          ptype_of(p->board[square_of(f, r)]) == PAWN) {
+  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
+      if (opposite_color_laser_map[sq] == 0 &&
+          color_of(p->board[sq]) == color &&
+          ptype_of(p->board[sq]) == PAWN) {
         pinned_pawns += 1;
       }
     }
@@ -227,8 +228,8 @@ int h_squares_attackable(position_t *p, color_t c, char laser_map[ARR_SIZE]) {
 
   float h_attackable = 0;
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; r++) {
-      square_t sq = square_of(f, r);
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       if (laser_map[sq] != 0) {
         h_attackable += h_dist(sq, o_king_sq);
       }
@@ -249,8 +250,8 @@ score_t eval(position_t *p, bool verbose) {
   char buf[MAX_CHARS_IN_MOVE];
 
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; r++) {
-      square_t sq = square_of(f, r);
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       piece_t x = p->board[sq];
       color_t c = color_of(x);
       if (verbose) {
@@ -315,12 +316,14 @@ score_t eval(position_t *p, bool verbose) {
     laser_map_white[i] = 4;   // Invalid square
   }
 
-  for (fil_t f = 0; f < BOARD_WIDTH; ++f) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; ++r) {
-      laser_map_black[square_of(f, r)] = 0;
-      laser_map_white[square_of(f, r)] = 0;
+  for (int i = 0; i < BOARD_WIDTH; i++) {
+    int k = (FIL_ORIGIN + i) * ARR_WIDTH + RNK_ORIGIN;
+    for (int j = 0; j < BOARD_WIDTH; j++, k++) {
+      laser_map_black[k] = 0;
+      laser_map_white[k] = 0;
     }
   }
+
   mark_laser_path(p, laser_map_black, BLACK, 1);
   mark_laser_path(p, laser_map_white, WHITE, 1);
 
