@@ -121,6 +121,7 @@ if __name__ == '__main__':
   test_dir = sys.argv[2]
   if not test_dir.endswith('/'):
     test_dir += '/'
+  awsrun = 'awsrun' if len(sys.argv) == 4 and sys.argv[3] == '--aws' else ''
 
   print bcolors.OKBLUE + 'Running Tests...' + bcolors.ENDC
 
@@ -134,8 +135,8 @@ if __name__ == '__main__':
     exe_o = 'exe_result_' + str(count)
 
     # Run each implementation on test files
-    call(REFERENCE_EXE + ' ' + test_dir +  test_file + ' > ' + ref_o, shell=True)
-    call(exe + ' ' + test_dir +  test_file + ' > ' + exe_o, shell=True)
+    call(awsrun + ' ' + REFERENCE_EXE + ' ' + test_dir +  test_file + ' > ' + ref_o, shell=True)
+    call(awsrun + ' ' + exe + ' ' + test_dir +  test_file + ' > ' + exe_o, shell=True)
     
     # Get best move path found for each impl
     ref_result = get_bestmove_path(ref_o)

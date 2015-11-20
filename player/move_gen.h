@@ -22,7 +22,7 @@
 // board is 8 x 8 or 10 x 10
 #define BOARD_WIDTH 10
 
-typedef uint8_t square_t;
+typedef int square_t;
 typedef int8_t rnk_t;
 typedef int8_t fil_t;
 

@@ -8,5 +8,5 @@ fi
 
 cd player/; make clean; make PROF=1; cd ../;
 
-./player/leiserchess my_tests/prof$1
+awsrun ./player/leiserchess my_tests/prof$1
 gprof ./player/leiserchess gmon.out
