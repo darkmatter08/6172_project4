@@ -11,4 +11,5 @@ perf.data*
 *.pgn
 *.class
 *.jar
-my_tests/*
+my_tests/rand_t*
+gmon.out
