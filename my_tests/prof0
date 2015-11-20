@@ -1,0 +1,4 @@
+go depth 5
+go depth 3
+go depth 4
+quit
