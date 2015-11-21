@@ -90,10 +90,11 @@ static score_t scout_search(searchNode *node, int depth,
   simple_mutex_t node_mutex;
   init_simple_mutex(&node_mutex);
 
-  // Sort the move list.
-  sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
 
   for (int mv_index = 0; mv_index < num_of_moves; mv_index++) {
+    // Sort up to number_of_moves_evaluated
+    sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
+
     // Get the next move from the move list.
     int local_index = number_of_moves_evaluated++;
     move_t mv = get_move(move_list[local_index]);
