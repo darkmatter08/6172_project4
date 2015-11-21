@@ -353,18 +353,28 @@ int fen_to_pos(position_t *p, char *fen) {
   // King check
 
   int Kings[2] = {0, 0};
-  for (fil_t f = 0; f < BOARD_WIDTH; ++f) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; ++r) {
-      square_t sq = square_of(f, r);
+  int pawn_index = 0;
+  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       piece_t x = p->board[sq];
       ptype_t typ = ptype_of(x);
       if (typ == KING) {
         Kings[color_of(x)]++;
         p->kloc[color_of(x)] = sq;
+      } else if (typ == PAWN) {
+        p->ploc[pawn_index] = sq;
+        pawn_index++;
       }
     }
   }
 
+  for (; pawn_index < NUM_PAWNS; pawn_index++) {
+    p->ploc[pawn_index] = 0;
+  }
+
+  tbassert(check_position_integrity(p), "pawn positions incorrect");
+  tbassert(check_pawn_counts(p), "pawn counts are off");
   if (Kings[WHITE] == 0) {
     fen_error(fen, c_count, "No White Kings");
     return 1;

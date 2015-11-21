@@ -50,6 +50,53 @@ color_t opp_color(color_t c) {
   }
 }
 
+int check_position_integrity(position_t *p) {
+  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
+      if (ptype_of(p->board[sq]) == PAWN) {
+        int pawn_found = 0;
+        for (int i = 0; i < NUM_PAWNS; i++) {
+          if (p->ploc[i] == sq) {
+            pawn_found = 1;
+            break;
+          }
+        }
+        if (pawn_found == 0) {
+          return 0;
+        }
+      }
+    }
+  }
+
+  return 1;
+}
+
+int check_pawn_counts(position_t *p) {
+  int live_pawn_count = 0;
+  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
+      if (ptype_of(p->board[sq]) == PAWN) {
+        live_pawn_count++;
+      }
+    }
+  }
+  int ploc_count = 0;
+  for (int i = 0; i < NUM_PAWNS; i++) {
+    if (p->ploc[i] != 0) {
+      ploc_count++;
+    }
+  }
+  if (ploc_count == live_pawn_count) {
+    return 1;
+  }
+  char fen[200];
+  pos_to_fen(p, fen);
+  tbassert(0, fen);
+  return 0;
+}
+
 
 void set_color(piece_t *x, color_t c) {
   tbassert((c >= 0) & (c <= COLOR_MASK), "color: %d\n", c);
@@ -98,8 +145,8 @@ uint64_t myrand();
 uint64_t compute_zob_key(position_t *p) {
   uint64_t key = 0;
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; r++) {
-      square_t sq = square_of(f, r);
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       key ^= zob[sq][p->board[sq]];
     }
   }
@@ -256,9 +303,10 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
     laser_map[i] = 4;   // Invalid square
   }
 
-  for (fil_t f = 0; f < BOARD_WIDTH; ++f) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; ++r) {
-      laser_map[square_of(f, r)] = 0;
+  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
+      laser_map[sq] = 0;
     }
   }
 
@@ -268,8 +316,8 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
   int move_count = 0;
 
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
-    for (rnk_t r = 0; r < BOARD_WIDTH; r++) {
-      square_t  sq = square_of(f, r);
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       piece_t x = p->board[sq];
 
       ptype_t typ = ptype_of(x);
@@ -427,6 +475,12 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
       // stomped piece.  Let the caller remove the piece from the
       // board.
       stomped_dst_sq = from_sq;
+    } else if (PAWN == ptype_of(from_piece) && EMPTY == ptype_of(to_piece)){
+      for (int i = 0; i < NUM_PAWNS; i++) {
+        if (from_sq == p->ploc[i]) {
+          p->ploc[i] = to_sq;
+        }
+      }
     }
 
     // Hash key updates
@@ -534,6 +588,11 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
 
     p->key ^= zob[stomped_sq][p->victims.stomped];   // remove from board
     p->board[stomped_sq] = 0;
+    for (int i = 0; i < NUM_PAWNS; i++) {
+      if (stomped_sq == p->ploc[i]) {
+        p->ploc[i] = 0;
+      }
+    }
     p->key ^= zob[stomped_sq][p->board[stomped_sq]];
 
     tbassert(p->key == compute_zob_key(p),
@@ -568,6 +627,11 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->victims.zapped = p->board[victim_sq];
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     p->board[victim_sq] = 0;
+    for (int i = 0; i < NUM_PAWNS; i++) {
+      if (victim_sq == p->ploc[i]) {
+        p->ploc[i] = 0;
+      }
+    }
     p->key ^= zob[victim_sq][0];
 
     tbassert(p->key == compute_zob_key(p),
@@ -606,6 +670,11 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
     move_t mv = get_move(lst[i]);
 
     square_t stomped_sq = low_level_make_move(p, &np, mv);  // make the move baby!
+    for (int i = 0; i < NUM_PAWNS; i++) {
+      if (stomped_sq == p->ploc[i]) {
+        p->ploc[i] = 0;
+      }
+    }
 
     if (stomped_sq != 0) {
       tbassert(ptype_of(np.board[stomped_sq]) == PAWN,
@@ -629,6 +698,11 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
       }
       np.victims.zapped = np.board[victim_sq];
       np.key ^= zob[victim_sq][np.victims.zapped];   // remove from board
+      for (int i = 0; i < NUM_PAWNS; i++) {
+        if (victim_sq == np.ploc[i]) {
+          np.ploc[i] = 0;
+        }
+      }
       np.board[victim_sq] = 0;
       np.key ^= zob[victim_sq][0];
     }
