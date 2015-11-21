@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#aws="--aws"
+
+if [ $1 ]
+then
+  ./gen_tests.py $1 my_tests/
+fi
+
+cd player/; make clean; make DEBUG=1; cd ../;
+
+./run_tests.py player/leiserchess my_tests/ $aws

@@ -368,15 +368,26 @@ moveEvaluationResult evaluateMove(searchNode *node, move_t mv, move_t killer_a,
 
 // Incremental sort of the move list.
 void sort_incremental(sortable_move_t *move_list, int num_of_moves, int mv_index) {
-  for (int j = 0; j < num_of_moves; j++) {
-    sortable_move_t insert = move_list[j];
-    int hole = j;
-    while (hole > 0 && insert > move_list[hole-1]) {
-      move_list[hole] = move_list[hole-1];
-      hole--;
-    }
-    move_list[hole] = insert;
+  // Return on the last one because it is already sorted and our for loop starts
+  // at mv_index + 1
+  if (mv_index == num_of_moves - 1) {
+    return;
   }
+
+  // Find the index of the maximum element after mv_index
+  sortable_move_t max = move_list[mv_index];
+  int max_index = mv_index;
+  for (int i = mv_index; i < num_of_moves; i++) {
+    if (move_list[i] > max) {
+      max = move_list[i];
+      max_index = i;
+    }
+  }
+
+  // Swap the old value at this mv_index with the min after the mv_index
+  sortable_move_t old_val = move_list[mv_index];
+  move_list[mv_index] = max;
+  move_list[max_index] = old_val;
 }
 
 // Returns true if a cutoff was triggered, false otherwise.
