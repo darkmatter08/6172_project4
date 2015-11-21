@@ -41,10 +41,25 @@ ev_score_t pcentral(fil_t f, rnk_t r) {
 char laser_map_black[ARR_SIZE];
 char laser_map_white[ARR_SIZE];
 
-void init_laser_map() {
+float h_dist_lookup[BOARD_WIDTH][BOARD_WIDTH][ARR_SIZE];
+
+void init_eval() {
   for (int i = 0; i < ARR_SIZE; ++i) {
     laser_map_black[i] = 4;   // Invalid square
     laser_map_white[i] = 4;   // Invalid square
+  }
+  for (fil_t fa = 0; fa < BOARD_WIDTH; fa++) {
+    for (rnk_t ra = 0; ra < BOARD_WIDTH; ra++) {
+      for (fil_t fb = 0; fb < BOARD_WIDTH; fb++) {
+        square_t b = (FIL_ORIGIN + fb) * ARR_WIDTH + RNK_ORIGIN;
+        for (rnk_t rb = 0; rb < BOARD_WIDTH; rb++, b++) {
+          int delta_fil = abs(fa - fb);
+          int delta_rnk = abs(ra - rb);
+          float x = (1.0 / (delta_fil + 1)) + (1.0 / (delta_rnk + 1));
+          h_dist_lookup[fa][ra][b] = x;
+        }
+      }
+    }
   }
 }
 
@@ -260,16 +275,9 @@ int mobility(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZ
   return mobility;
 }
 
-
 // Harmonic-ish distance: 1/(|dx|+1) + 1/(|dy|+1)
-float h_dist(square_t a, square_t b) {
-  //  printf("a = %d, FIL(a) = %d, RNK(a) = %d\n", a, FIL(a), RNK(a));
-  //  printf("b = %d, FIL(b) = %d, RNK(b) = %d\n", b, FIL(b), RNK(b));
-  int delta_fil = abs(fil_of(a) - fil_of(b));
-  int delta_rnk = abs(rnk_of(a) - rnk_of(b));
-  float x = (1.0 / (delta_fil + 1)) + (1.0 / (delta_rnk + 1));
-  //  printf("max_dist = %d\n\n", x);
-  return x;
+float h_dist(rnk_t ra, fil_t fa, square_t b) {
+  return h_dist_lookup[ra][fa][b];
 }
 
 // H_SQUARES_ATTACKABLE heuristic: for shooting the enemy king
@@ -285,7 +293,7 @@ int h_squares_attackable(position_t *p, color_t c, char laser_map[ARR_SIZE]) {
     square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
     for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       if (laser_map[sq] != 0) {
-        h_attackable += h_dist(sq, o_king_sq);
+        h_attackable += h_dist(f, r, o_king_sq);
       }
     }
   }

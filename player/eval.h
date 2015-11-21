@@ -13,5 +13,5 @@
 #define PAWN_EV_VALUE (PAWN_VALUE*EV_SCORE_RATIO)
 
 score_t eval(position_t *p, bool verbose);
-void init_laser_map();
+void init_eval();
 #endif  // EVAL_H
