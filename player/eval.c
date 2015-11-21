@@ -38,6 +38,16 @@ ev_score_t pcentral(fil_t f, rnk_t r) {
   return PCENTRAL * bonus;
 }
 
+char laser_map_black[ARR_SIZE];
+char laser_map_white[ARR_SIZE];
+
+void init_laser_map() {
+  for (int i = 0; i < ARR_SIZE; ++i) {
+    laser_map_black[i] = 4;   // Invalid square
+    laser_map_white[i] = 4;   // Invalid square
+  }
+}
+
 
 // returns true if c lies on or between a and b, which are not ordered
 bool between(int c, int a, int b) {
@@ -90,12 +100,7 @@ ev_score_t kface(position_t *p, fil_t f, rnk_t r) {
 }
 
 // KAGGRESSIVE heuristic: bonus for King with more space to back
-ev_score_t kaggressive(position_t *p, fil_t f, rnk_t r) {
-  square_t sq = square_of(f, r);
-  piece_t x = p->board[sq];
-  color_t c = color_of(x);
-  tbassert(ptype_of(x) == KING, "ptype_of(x) = %d\n", ptype_of(x));
-
+ev_score_t kaggressive(position_t *p, fil_t f, rnk_t r, square_t sq, color_t c) {
   square_t opp_sq = p->kloc[opp_color(c)];
   fil_t of = fil_of(opp_sq);
   rnk_t _or = (rnk_t) rnk_of(opp_sq);
@@ -295,19 +300,11 @@ score_t eval(position_t *p, bool verbose) {
     score[c] += bonus;
 
     // KAGGRESSIVE heuristic
-    bonus = kaggressive(p, f, r);
+    bonus = kaggressive(p, f, r, sq, c);
     if (verbose) {
       printf("KAGGRESSIVE bonus %d for %s King on %s\n", bonus, color_to_str(c), buf);
     }
     score[c] += bonus;
-  }
-
-  char laser_map_black[ARR_SIZE];
-  char laser_map_white[ARR_SIZE];
-
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map_black[i] = 4;   // Invalid square
-    laser_map_white[i] = 4;   // Invalid square
   }
 
   for (int i = 0; i < BOARD_WIDTH; i++) {
