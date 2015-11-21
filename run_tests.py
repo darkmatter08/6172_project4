@@ -47,7 +47,7 @@ def print_usage():
 # Print summary of test results
 def print_summary(avg_nps_incr):
   print '\n' + bcolors.HEADER + 'Summary:' + bcolors.ENDC
-  print '\tAVG_NPS_INCR: ' + str(avg_nps_incr)
+  print '\tAVG_NPS_INCR: ' + str(avg_nps_incr) + '%'
 
 # Print for passed test 
 def print_pass(f_name, stats):
@@ -162,4 +162,4 @@ if __name__ == '__main__':
       exit(0)
     count += 1
   print bcolors.OKGREEN + 'ALL TESTS PASSED!' + bcolors.ENDC
-  print_summary(avg(nps_incr))
+  print_summary(100 * avg(nps_incr))
