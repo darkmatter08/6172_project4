@@ -12,6 +12,23 @@
 // ev_score_t values
 #define PAWN_EV_VALUE (PAWN_VALUE*EV_SCORE_RATIO)
 
+/* char base_laser_map = {0xFF, 0xFF,
+ *                        0xFF, 0xFF,
+ *                        0xFF, 0xFF,
+ *                        0xE0, 0x07,
+ *                        0xE0, 0x07,
+ *                        0xE0, 0x07,
+ *                        0xE0, 0x07,
+ *                        0xE0, 0x07,
+ *                        0xE0, 0x07,
+ *                        0xE0, 0x07,
+ *                        0xE0, 0x07,
+ *                        0xE0, 0x07,
+ *                        0xE0, 0x07,
+ *                        0xFF, 0xFF,
+ *                        0xFF, 0xFF,
+ *                        0xFF, 0xFF}; */
+
 score_t eval(position_t *p, bool verbose);
 void init_eval();
 #endif  // EVAL_H

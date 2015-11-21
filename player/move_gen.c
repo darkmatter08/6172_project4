@@ -16,6 +16,23 @@
 
 #define MAX(x, y)  ((x) > (y) ? (x) : (y))
 #define MIN(x, y)  ((x) < (y) ? (x) : (y))
+#define BASE_LASER_MAP { 0xFF, 0xFF,           \
+        0xFF, 0xFF,                             \
+        0xFF, 0xFF,                             \
+        0x07, 0xE0,                             \
+        0x07, 0xE0,                             \
+        0x07, 0xE0,                             \
+        0x07, 0xE0,                             \
+        0x07, 0xE0,                             \
+        0x07, 0xE0,                             \
+        0x07, 0xE0,                             \
+        0x07, 0xE0,                             \
+        0x07, 0xE0,                             \
+        0x07, 0xE0,                             \
+        0xFF, 0xFF,                             \
+        0xFF, 0xFF,                             \
+        0xFF, 0xFF                              \
+        }
 
 int USE_KO;  // Respect the Ko rule
 
@@ -297,21 +314,31 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
                  bool strict) {
   color_t color_to_move = color_to_move_of(p);
   // Make sure that the enemy_laser map is marked
-  char laser_map[ARR_SIZE];
+  char laser_map[ARR_SIZE / 8] = BASE_LASER_MAP;
+
+  char laser_map_old[ARR_SIZE];
 
   for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map[i] = 4;   // Invalid square
+    laser_map_old[i] = 4;   // Invalid square
   }
 
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
     square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
     for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
-      laser_map[sq] = 0;
+      laser_map_old[sq] = 0;
     }
   }
 
   // 1 = path of laser with no moves
-  mark_laser_path(p, laser_map, opp_color(color_to_move), 1);
+  mark_laser_path(p, laser_map, opp_color(color_to_move));
+
+  for (int i = 0; i < ARR_SIZE; i++) {
+    if (laser_map_old[i] == 0) {
+      tbassert(!laser_hits(laser_map, i), "foobar");
+    } else {
+      tbassert(laser_hits(laser_map, i), "foobar");
+    }
+  }
 
   int move_count = 0;
 
@@ -327,7 +354,7 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
         case EMPTY:
           break;
         case PAWN:
-          if (laser_map[sq] == 1) continue;  // Piece is pinned down by laser.
+          if (laser_hits(laser_map, sq)) continue;  // Piece is pinned down by laser.
         case KING:
           if (color != color_to_move) {  // Wrong color
             break;
@@ -807,4 +834,15 @@ bool zero_victims(victims_t victims) {
 bool victim_exists(victims_t victims) {
   return (victims.stomped > 0) ||
       (victims.zapped > 0);
+}
+
+bool laser_hits(char *laser_map, square_t sq) {
+  char byte = laser_map[sq / 8];
+  return (byte >> (sq % 8) & 1ll);
+}
+
+void set_laser_sq(char *laser_map, square_t sq) {
+  char byte = laser_map[sq / 8];
+  byte |= 1ll << (sq % 8);
+  laser_map[sq / 8] = byte;
 }

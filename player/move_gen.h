@@ -190,6 +190,10 @@ bool is_KO(victims_t victims);
 bool zero_victims(victims_t victims);
 bool victim_exists(victims_t victims);
 
-void mark_laser_path(position_t *p, char *laser_map, color_t c,
-                     char mark_mask);
+void mark_laser_path(position_t *p, char *laser_map, color_t c);
+void mark_laser_path_old(position_t *p, char *laser_map, color_t c,
+                         char mark_mask);
+
+void set_laser_sq(char *laser_map, square_t sq);
+bool laser_hits(char *laser_map, square_t sq);
 #endif  // MOVE_GEN_H
