@@ -217,6 +217,12 @@ void mark_laser_path(position_t *p, char *laser_map, color_t c,
 
   while (true) {
     sq += beam_of(bdir);
+    if (sq >= ARR_SIZE || sq < 0 ||
+        (beam_of(bdir) == 1 && (sq % ARR_WIDTH) == 0) ||
+        (beam_of(bdir) == -1 && (sq % ARR_WIDTH) == (ARR_WIDTH - 1))) {
+      return;
+    }
+
     laser_map[sq] |= mark_mask;
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
@@ -252,7 +258,7 @@ int pawnpin(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE
   for (int i = 0; i < NUM_PAWNS; i++) {
 
     square_t sq = p->ploc[i];
-    if (sq == 0) {
+    if (sq == INVALID_SQ) {
       continue;
     }
     if (opposite_color_laser_map[sq] == 0 &&
@@ -337,6 +343,11 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
 
   while (true) {
     sq += beam_of(bdir);
+    if (sq >= ARR_SIZE || sq < 0 ||
+        (beam_of(bdir) == 1 && (sq % ARR_WIDTH) == 0) ||
+        (beam_of(bdir) == -1 && (sq % ARR_WIDTH) == (ARR_WIDTH - 1))) {
+      return h_attackable;
+    }
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
     switch (ptype_of(p->board[sq])) {
@@ -379,7 +390,7 @@ score_t eval(position_t *p, bool verbose) {
 
   for (int i = 0; i < NUM_PAWNS; i++) {
     square_t sq = p->ploc[i];
-    if (sq == 0) {
+    if (sq == INVALID_SQ) {
       continue;
     }
     piece_t x = p->board[sq];
@@ -427,12 +438,9 @@ score_t eval(position_t *p, bool verbose) {
   score[WHITE] += kaggressive_opt(p, wk_f, wk_r, delta_fil_b, delta_rnk_b);
   score[BLACK] += kaggressive_opt(p, bk_f, bk_r, delta_fil_w, delta_rnk_w);
 
-  for (int i = 0; i < BOARD_WIDTH; i++) {
-    int k = (FIL_ORIGIN + i) * ARR_WIDTH + RNK_ORIGIN;
-    for (int j = 0; j < BOARD_WIDTH; j++, k++) {
-      laser_map_black[k] = 0;
-      laser_map_white[k] = 0;
-    }
+  for (int i = 0; i < ARR_WIDTH; i++) {
+      laser_map_black[i] = 0;
+      laser_map_white[i] = 0;
   }
 
   mark_laser_path(p, laser_map_black, BLACK, 1);
@@ -440,8 +448,6 @@ score_t eval(position_t *p, bool verbose) {
 
   score[WHITE] += HATTACK * h_squares_attackable_opt(p, bk, WHITE);
   score[BLACK] += HATTACK * h_squares_attackable_opt(p, wk, BLACK);
-  tbassert(h_squares_attackable(p, WHITE, laser_map_white) == h_squares_attackable_opt(p, bk, WHITE), "h_squares_attackable does not match white\n");
-  tbassert(h_squares_attackable(p, BLACK, laser_map_black) == h_squares_attackable_opt(p, wk, BLACK), "h_squares_attackable does not match black\n");
 
   score[WHITE] += MOBILITY * mobility_opt(p, wk, laser_map_black);
   score[BLACK] += MOBILITY * mobility_opt(p, bk, laser_map_white);

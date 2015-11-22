@@ -342,7 +342,7 @@ int fen_to_pos(position_t *p, char *fen) {
   int c_count = 0;  // Invariant: fen[c_count] is next char to be read
 
   for (int i = 0; i < ARR_SIZE; ++i) {
-    set_ptype(&p->board[i], INVALID);  // squares are invalid until filled
+    set_ptype(&p->board[i], EMPTY);  // squares are invalid until filled
   }
 
   c_count = parse_fen_board(p, fen);
@@ -370,7 +370,7 @@ int fen_to_pos(position_t *p, char *fen) {
   }
 
   for (; pawn_index < NUM_PAWNS; pawn_index++) {
-    p->ploc[pawn_index] = 0;
+    p->ploc[pawn_index] = INVALID_SQ;
   }
 
   tbassert(check_position_integrity(p), "pawn positions incorrect");

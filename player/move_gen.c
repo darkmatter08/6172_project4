@@ -84,7 +84,7 @@ int check_pawn_counts(position_t *p) {
   }
   int ploc_count = 0;
   for (int i = 0; i < NUM_PAWNS; i++) {
-    if (p->ploc[i] != 0) {
+    if (p->ploc[i] != INVALID_SQ) {
       ploc_count++;
     }
   }
@@ -340,7 +340,7 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
             // Skip moves into invalid squares, squares occupied by
             // kings, nonempty squares if x is a king, and squares with
             // pawns of matching color
-            if (ptype_of(p->board[dest]) == INVALID ||
+            if ((dest < 0 || dest >= ARR_SIZE) ||
                 ptype_of(p->board[dest]) == KING ||
                 (typ == KING && ptype_of(p->board[dest]) != EMPTY) ||
                 (typ == PAWN && ptype_of(p->board[dest]) == PAWN &&
@@ -397,7 +397,7 @@ int generate_king_moves(position_t *p, square_t sq, sortable_move_t *sortable_mo
     int dest = sq + dir_of(d);
     piece_t piece = p->board[dest];
     ptype_t typ = ptype_of(piece);
-    if (typ == EMPTY) {
+    if (typ == EMPTY && (dest >= 0 && dest < ARR_SIZE)) {
       sortable_move_list[move_count++] = move_of(KING, (rot_t) 0, sq, dest);
     }
   }
@@ -418,7 +418,7 @@ int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *
     int dest = sq + dir_of(d);
     piece_t piece = p->board[dest];
     ptype_t typ = ptype_of(piece);
-    if (typ == EMPTY || (typ == PAWN && color_of(piece) != c)) {
+    if ((typ == EMPTY || (typ == PAWN && color_of(piece) != c)) && (dest >= 0 && dest < ARR_SIZE)) {
       sortable_move_list[move_count++] = move_of(PAWN, (rot_t) 0, sq, dest);
     }
   }
@@ -436,17 +436,6 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   color_t color_to_move = color_to_move_of(p);
   // Make sure that the enemy_laser map is marked
   char laser_map[ARR_SIZE];
-
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map[i] = 4;   // Invalid square
-  }
-
-  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
-    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
-    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
-      laser_map[sq] = 0;
-    }
-  }
 
   // 1 = path of laser with no moves
   mark_laser_path(p, laser_map, opp_color(color_to_move), 1);
@@ -469,7 +458,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
 square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
   tbassert(mv != 0, "mv was zero.\n");
 
-  square_t stomped_dst_sq = 0;
+  square_t stomped_dst_sq = INVALID_SQ;
 
   WHEN_DEBUG_VERBOSE(char buf[MAX_CHARS_IN_MOVE]);
   WHEN_DEBUG_VERBOSE({
@@ -523,7 +512,7 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
   tbassert(from_sq < ARR_SIZE && from_sq > 0, "from_sq: %d\n", from_sq);
   tbassert(p->board[from_sq] < (1 << PIECE_SIZE) && p->board[from_sq] >= 0,
            "p->board[from_sq]: %d\n", p->board[from_sq]);
-  tbassert(to_sq < ARR_SIZE && to_sq > 0, "to_sq: %d\n", to_sq);
+  tbassert(to_sq < ARR_SIZE && to_sq >= 0, "to_sq: %d\n", to_sq);
   tbassert(p->board[to_sq] < (1 << PIECE_SIZE) && p->board[to_sq] >= 0,
            "p->board[to_sq]: %d\n", p->board[to_sq]);
 
@@ -613,22 +602,32 @@ square_t fire(position_t *p) {
 
   while (true) {
     sq += beam_of(bdir);
+    printf("bdir is %d\n", beam_of(bdir));
+    if (sq >= ARR_SIZE || sq < 0 ||
+        (beam_of(bdir) == 1 && (sq % ARR_WIDTH) == 0) ||
+        (beam_of(bdir) == -1 && (sq % ARR_WIDTH) == (ARR_WIDTH - 1))) {
+      return INVALID_SQ;
+    }
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
     switch (ptype_of(p->board[sq])) {
       case EMPTY:  // empty square
         break;
       case PAWN:  // Pawn
+        printf("hit pawn %d\n", sq);
+        printf("rnk: %d, fil: %d\n", rnk_of(sq), fil_of(sq));
         bdir = reflect_of(bdir, ori_of(p->board[sq]));
         if (bdir < 0) {  // Hit back of Pawn
           return sq;
         }
         break;
       case KING:  // King
+        printf("hit king %d\n", sq);
+        printf("rnk: %d, fil: %d\n", rnk_of(sq), fil_of(sq));
         return sq;  // sorry, game over my friend!
         break;
       case INVALID:  // Ran off edge of board
-        return 0;
+        return INVALID_SQ;
         break;
       default:  // Shouldna happen, man!
         tbassert(false, "Like porkchops and whipped cream.\n");
@@ -648,13 +647,13 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
   square_t stomped_sq = low_level_make_move(old, p, mv);
 
   WHEN_DEBUG_VERBOSE({
-      if (stomped_sq != 0) {
+      if (stomped_sq != INVALID_SQ) {
         square_to_str(stomped_sq, buf, MAX_CHARS_IN_MOVE);
         DEBUG_LOG(1, "Stomping piece on %s\n", buf);
       }
     });
 
-  if (stomped_sq == 0) {
+  if (stomped_sq == INVALID_SQ) {
     p->victims.stomped = 0;
 
     // Don't check for Ko yet.
@@ -666,7 +665,8 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->board[stomped_sq] = 0;
     for (int i = 0; i < NUM_PAWNS; i++) {
       if (stomped_sq == p->ploc[i]) {
-        p->ploc[i] = 0;
+        p->ploc[i] = INVALID_SQ;
+        break;
       }
     }
     p->key ^= zob[stomped_sq][p->board[stomped_sq]];
@@ -685,13 +685,13 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
   square_t victim_sq = fire(p);
 
   WHEN_DEBUG_VERBOSE({
-      if (victim_sq != 0) {
+      if (victim_sq != INVALID_SQ) {
         square_to_str(victim_sq, buf, MAX_CHARS_IN_MOVE);
         DEBUG_LOG(1, "Zapping piece on %s\n", buf);
       }
     });
 
-  if (victim_sq == 0) {
+  if (victim_sq == INVALID_SQ) {
     p->victims.zapped = 0;
 
     if (USE_KO &&  // Ko rule
@@ -705,7 +705,8 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->board[victim_sq] = 0;
     for (int i = 0; i < NUM_PAWNS; i++) {
       if (victim_sq == p->ploc[i]) {
-        p->ploc[i] = 0;
+        p->ploc[i] = INVALID_SQ;
+        break;
       }
     }
     p->key ^= zob[victim_sq][0];
@@ -750,11 +751,12 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
     square_t stomped_sq = low_level_make_move(p, &np, mv);  // make the move baby!
     for (int i = 0; i < NUM_PAWNS; i++) {
       if (stomped_sq == p->ploc[i]) {
-        p->ploc[i] = 0;
+        p->ploc[i] = INVALID_SQ;
+        break;
       }
     }
 
-    if (stomped_sq != 0) {
+    if (stomped_sq != INVALID_SQ) {
       tbassert(ptype_of(np.board[stomped_sq]) == PAWN,
                "ptype_of(np.board[stomped_sq]): %d\n",
                ptype_of(np.board[stomped_sq]));
@@ -767,9 +769,9 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
 
     square_t victim_sq = fire(&np);  // the guy to disappear
 
-    if (victim_sq != 0) {            // hit a piece
+    if (victim_sq != INVALID_SQ) {            // hit a piece
       ptype_t typ = ptype_of(np.board[victim_sq]);
-      tbassert((typ != EMPTY) && (typ != INVALID), "typ: %d\n", typ);
+      tbassert((typ != EMPTY), "typ: %d\n", typ);
       if (typ == KING) {  // do not expand further: hit a King
         node_count++;
         continue;
@@ -778,7 +780,8 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
       np.key ^= zob[victim_sq][np.victims.zapped];   // remove from board
       for (int i = 0; i < NUM_PAWNS; i++) {
         if (victim_sq == np.ploc[i]) {
-          np.ploc[i] = 0;
+          np.ploc[i] = INVALID_SQ;
+          break;
         }
       }
       np.board[victim_sq] = 0;
