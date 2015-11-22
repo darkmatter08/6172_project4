@@ -400,7 +400,6 @@ void print_options() {
 int main(int argc, char *argv[]) {
   position_t *gme = (position_t *) malloc(sizeof(position_t) * MAX_PLY_IN_GAME);
 
-  init_eval();
 
   setbuf(stdout, NULL);
   setbuf(stdin, NULL);
@@ -413,6 +412,7 @@ int main(int argc, char *argv[]) {
   }
 
   init_options();
+  init_eval();
   init_zob();
 
   char **tok = (char **) malloc(sizeof(char *) * MAX_CHARS_IN_TOKEN * MAX_PLY_IN_GAME);
