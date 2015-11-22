@@ -42,14 +42,14 @@ def print_usage():
   print '\n./run_tests.py <player_executable> <test_dir>'
   print '\n\t<player_executable> : leiserchess executable to test'
   print '\t<test_dir>          : directory of tests to run impl against'
-  print '\nNOTE: pass in "--help" or "-h" to see all options' + bcolors.ENDC 
+  print '\nNOTE: pass in "--help" or "-h" to see all options' + bcolors.ENDC
 
 # Print summary of test results
 def print_summary(avg_nps_incr):
   print '\n' + bcolors.HEADER + 'Summary:' + bcolors.ENDC
   print '\tAVG_NPS_INCR: ' + str(avg_nps_incr) + '%'
 
-# Print for passed test 
+# Print for passed test
 def print_pass(f_name, stats):
   print '[ ' + bcolors.OKGREEN + 'PASS' + bcolors.ENDC + ' ] : ' + f_name
   ref_stats = [(label, stat[0]) for label, stat in stats.iteritems()]
@@ -90,7 +90,7 @@ def get_bestmove(f_name):
       line = f.readline()
   return line.rstrip()
 
-# Return average nps over all depths 
+# Return average nps over all depths
 def get_avg_nps(f_name):
   nps = []
   with open(f_name, 'r') as f:
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     # Run each implementation on test files
     call(awsrun + ' ' + REFERENCE_EXE + ' ' + test_dir +  test_file + ' > ' + ref_o, shell=True)
     call(awsrun + ' ' + exe + ' ' + test_dir +  test_file + ' > ' + exe_o, shell=True)
-    
+
     # Get best move path found for each impl
     ref_result = get_bestmove_path(ref_o)
     exe_result = get_bestmove_path(exe_o)
@@ -159,7 +159,6 @@ if __name__ == '__main__':
 
     if not passed:
       print bcolors.FAIL + 'TEST FAILED!' + bcolors.ENDC
-      exit(0)
     count += 1
   print bcolors.OKGREEN + 'ALL TESTS PASSED!' + bcolors.ENDC
   print_summary(100 * avg(nps_incr))

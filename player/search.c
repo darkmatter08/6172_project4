@@ -223,7 +223,9 @@ score_t searchRoot(position_t *p, score_t alpha, score_t beta, int depth,
 
   if (depth == 1) {
     // we are at depth 1; generate all possible moves
-    num_of_moves = generate_all(p, move_list, false);
+    num_of_moves = generate_all_opt(p, move_list, false);
+    tbassert(num_of_moves == generate_all(p, move_list, false),
+             "move counts do not match");
     // shuffle the list of moves
     for (int i = 0; i < num_of_moves; i++) {
       int r = myrand() % num_of_moves;

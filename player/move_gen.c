@@ -390,6 +390,80 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
   return move_count;
 }
 
+int generate_king_moves(position_t *p, square_t sq, sortable_move_t *sortable_move_list, int move_count) {
+  for (int d = 0; d < 8; d++) {
+    int dest = sq + dir_of(d);
+    piece_t piece = p->board[dest];
+    ptype_t typ = ptype_of(piece);
+    if (typ == EMPTY) {
+      sortable_move_list[move_count++] = move_of(KING, (rot_t) 0, sq, dest);
+    }
+  }
+  for (int rot = 1; rot < 4; ++rot) {
+    sortable_move_list[move_count++] = move_of(KING, (rot_t) rot, sq, sq);
+  }
+  sortable_move_list[move_count++] = move_of(KING, (rot_t) 0, sq, sq);
+
+  return move_count;
+}
+
+int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *sortable_move_list, int move_count, char *laser_map) {
+  if (laser_map[sq] == 1) {
+    return move_count;
+  }
+
+  for (int d = 0; d < 8; d++) {
+    int dest = sq + dir_of(d);
+    piece_t piece = p->board[dest];
+    ptype_t typ = ptype_of(piece);
+    if (typ == EMPTY || (typ == PAWN && color_of(piece) != c)) {
+      sortable_move_list[move_count++] = move_of(PAWN, (rot_t) 0, sq, dest);
+    }
+  }
+  for (int rot = 1; rot < 4; ++rot) {
+    sortable_move_list[move_count++] = move_of(PAWN, (rot_t) rot, sq, sq);
+  }
+
+  return move_count;
+}
+
+// Generate all moves from position p.  Returns number of moves.
+// strict currently ignored
+int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
+                 bool strict) {
+  color_t color_to_move = color_to_move_of(p);
+  // Make sure that the enemy_laser map is marked
+  char laser_map[ARR_SIZE];
+
+  for (int i = 0; i < ARR_SIZE; ++i) {
+    laser_map[i] = 4;   // Invalid square
+  }
+
+  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
+      laser_map[sq] = 0;
+    }
+  }
+
+  // 1 = path of laser with no moves
+  mark_laser_path(p, laser_map, opp_color(color_to_move), 1);
+
+  int move_count = 0;
+
+  square_t k = p->kloc[color_to_move];
+  move_count = generate_king_moves(p, k, sortable_move_list, move_count);
+  for (int i = 0; i < NUM_PAWNS; i++) {
+    square_t pawn = p->ploc[i];
+    piece_t x = p->board[pawn];
+    if (pawn != 0 && color_of(x) == color_to_move) {
+      move_count = generate_pawn_moves(p, pawn, color_to_move, sortable_move_list, move_count, laser_map);
+    }
+  }
+
+  return move_count;
+}
+
 square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
   tbassert(mv != 0, "mv was zero.\n");
 
@@ -660,7 +734,9 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
     return 1;
   }
 
-  num_moves = generate_all(p, lst, true);
+  num_moves = generate_all_opt(p, lst, true);
+  tbassert(num_moves == generate_all(p, lst, true),
+           "move counts do not match");
 
   if (depth == 1) {
     return num_moves;
