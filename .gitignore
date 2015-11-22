@@ -12,6 +12,7 @@ perf.data*
 *.class
 *.jar
 my_tests/rand_t*
+my_tests/prof_*
 gmon.out
 .DS_Store
 ._.DS_Store
