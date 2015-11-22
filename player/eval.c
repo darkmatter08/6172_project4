@@ -48,10 +48,6 @@ ev_score_t pcentral_calc(fil_t f, rnk_t r) {
 
 // setup lookup tables, etc
 void init_eval() {
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map_black[i] = 4;   // Invalid square
-    laser_map_white[i] = 4;   // Invalid square
-  }
   for (fil_t fa = 0; fa < BOARD_WIDTH; fa++) {
     for (rnk_t ra = 0; ra < BOARD_WIDTH; ra++) {
       pcentral_lookup[fa][ra] = pcentral_calc(fa, ra);
@@ -210,6 +206,9 @@ void mark_laser_path(position_t *p, char *laser_map, color_t c,
   // Fire laser, recording in laser_map
   square_t sq = np.kloc[c];
   int bdir = ori_of(np.board[sq]);
+  /* printf("\nsq is %d\n", sq);
+   * printf("sq rnk: %d, sq fil: %d\n", rnk_of(sq), fil_of(sq));
+   * printf("bdir is %d\n", beam_of(bdir)); */
 
   tbassert(ptype_of(np.board[sq]) == KING,
            "ptype: %d\n", ptype_of(np.board[sq]));
@@ -220,18 +219,26 @@ void mark_laser_path(position_t *p, char *laser_map, color_t c,
     if (sq >= ARR_SIZE || sq < 0 ||
         (beam_of(bdir) == 1 && (sq % ARR_WIDTH) == 0) ||
         (beam_of(bdir) == -1 && (sq % ARR_WIDTH) == (ARR_WIDTH - 1))) {
+      /* printf("bdir is %d\n", beam_of(bdir)); */
+      /* printf("return because out of bounds\n"); */
       return;
     }
+    /* printf("\nsq is %d\n", sq);
+     * printf("sq rnk: %d, sq fil: %d\n", rnk_of(sq), fil_of(sq));
+     * printf("bdir is %d\n", beam_of(bdir)); */
 
     laser_map[sq] |= mark_mask;
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
+    /* printf("ptype: %d\n", ptype_of((p->board[sq]))); */
 
     switch (ptype_of(p->board[sq])) {
       case EMPTY:  // empty square
         break;
       case PAWN:  // Pawn
+        /* printf("found pawn\n"); */
         bdir = reflect_of(bdir, ori_of(p->board[sq]));
         if (bdir < 0) {  // Hit back of Pawn
+          /* printf("returning because bdir < 0\n"); */
           return;
         }
         break;

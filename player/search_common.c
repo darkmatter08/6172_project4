@@ -435,8 +435,35 @@ static int get_sortable_move_list(searchNode *node, sortable_move_t * move_list,
                          int hash_table_move) {
   // number of moves in list
   int num_of_moves = generate_all_opt(&(node->position), move_list, false);
-  tbassert(num_of_moves == generate_all(&(node->position), move_list, false),
-           "move counts do not match");
+  sortable_move_t old_move_list[MAX_NUM_MOVES];
+  int old_num_of_moves = generate_all(&(node->position), old_move_list, false);
+  if (num_of_moves != old_num_of_moves) {
+    char fen[200];
+    pos_to_fen(&(node->position), fen);
+    char lmap[ARR_SIZE];
+    printf("\n\nhere\n\n");
+    mark_laser_path(&(node->position), lmap, opp_color(color_to_move_of(&(node->position))), 1);
+    for (int i = 0; i < ARR_SIZE; i++) {
+      if (lmap[i] != 0) {
+        printf("%d %d is marked\n", rnk_of(i), fil_of(i));
+      }
+    }
+    printf("%s\n", fen);
+
+    printf("%d\n", num_of_moves);
+    for (int i = 0; i < num_of_moves; i++) {
+      printf("from: %d %d to: %d %d rot:%d\n", rnk_of(from_square(move_list[i])), fil_of(from_square(move_list[i])),
+             rnk_of(to_square(move_list[i])), fil_of(to_square(move_list[i])), rot_of(move_list[i]));
+    }
+    printf("%d\n", old_num_of_moves);
+    for (int i = 0; i < old_num_of_moves; i++) {
+      printf("from: %d %d to: %d %d rot:%d\n", rnk_of(from_square(old_move_list[i])), fil_of(from_square(old_move_list[i])),
+             rnk_of(to_square(old_move_list[i])), fil_of(to_square(old_move_list[i])), rot_of(old_move_list[i]));
+    }
+
+
+    tbassert(false, "fuck\n");
+  }
 
   color_t fake_color_to_move = color_to_move_of(&(node->position));
 
@@ -464,5 +491,3 @@ static int get_sortable_move_list(searchNode *node, sortable_move_t * move_list,
   }
   return num_of_moves;
 }
-
-
