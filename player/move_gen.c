@@ -176,14 +176,16 @@ square_t square_of(fil_t f, rnk_t r) {
 
 // Finds file of square
 fil_t fil_of(square_t sq) {
-  fil_t f = ((sq >> FIL_SHIFT) & FIL_MASK) - FIL_ORIGIN;
+  fil_t f = sq / ARR_WIDTH - FIL_ORIGIN;
+  //fil_t f = ((sq >> FIL_SHIFT) & FIL_MASK) - FIL_ORIGIN;
   DEBUG_LOG(1, "File of square %d is %d\n", sq, f);
   return f;
 }
 
 // Finds rank of square
 rnk_t rnk_of(square_t sq) {
-  rnk_t r = ((sq >> RNK_SHIFT) & RNK_MASK) - RNK_ORIGIN;
+  rnk_t r = sq % ARR_WIDTH - RNK_ORIGIN;
+  //rnk_t r = ((sq >> RNK_SHIFT) & RNK_MASK) - RNK_ORIGIN;
   DEBUG_LOG(1, "Rank of square %d is %d\n", sq, r);
   return r;
 }

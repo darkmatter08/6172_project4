@@ -16,7 +16,7 @@
 #define MAX_CHARS_IN_TOKEN 64
 
 // the board (which is 8x8 or 10x10) is centered in a 16x16 array
-#define ARR_WIDTH 16
+#define ARR_WIDTH 12
 #define ARR_SIZE (ARR_WIDTH * ARR_WIDTH)
 
 // board is 8 x 8 or 10 x 10
