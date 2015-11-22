@@ -542,23 +542,19 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
            ptype_of(from_piece), ptype_of(to_piece),
            from_sq, to_sq,
            color_of(from_piece), color_of(to_piece));
-  ptype_t from_typ = ptype_of(from_piece);
-  ptype_t to_typ = ptype_of(to_piece);
-  color_t from_color = color_of(from_piece);
-  color_t to_color = color_of(to_piece);
+
   if (to_sq != from_sq) {  // move, not rotation
-    if (PAWN == from_typ &&
-        PAWN == to_typ &&
-        to_color == opp_color(from_color)) {
+    if (PAWN == ptype_of(from_piece) &&
+        PAWN == ptype_of(to_piece) &&
+        color_of(to_piece) == opp_color(color_of(from_piece))) {
       // We're stomping a piece.  Return the destination of the
       // stomped piece.  Let the caller remove the piece from the
       // board.
       stomped_dst_sq = from_sq;
-    } else if (PAWN == from_typ && EMPTY == to_typ){
+    } else if (PAWN == ptype_of(from_piece) && EMPTY == ptype_of(to_piece)){
       for (int i = 0; i < NUM_PAWNS; i++) {
         if (from_sq == p->ploc[i]) {
           p->ploc[i] = to_sq;
-          break;
         }
       }
     }
@@ -574,11 +570,11 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
     p->key ^= zob[from_sq][to_piece];  // place to_piece in from_sq
 
     // Update King locations if necessary
-    if (from_typ == KING) {
-      p->kloc[from_color] = to_sq;
+    if (ptype_of(from_piece) == KING) {
+      p->kloc[color_of(from_piece)] = to_sq;
     }
-    if (to_typ == KING) {
-      p->kloc[to_color] = from_sq;
+    if (ptype_of(to_piece) == KING) {
+      p->kloc[color_of(to_piece)] = from_sq;
     }
 
   } else {  // rotation
@@ -610,13 +606,13 @@ square_t fire(position_t *p) {
   color_t fake_color_to_move = (color_to_move_of(p) == WHITE) ? BLACK : WHITE;
   square_t sq = p->kloc[fake_color_to_move];
   int bdir = ori_of(p->board[sq]);
-  int beam = beam_of(bdir);
+
   tbassert(ptype_of(p->board[ p->kloc[fake_color_to_move] ]) == KING,
            "ptype_of(p->board[ p->kloc[fake_color_to_move] ]): %d\n",
            ptype_of(p->board[ p->kloc[fake_color_to_move] ]));
 
   while (true) {
-    sq += beam;
+    sq += beam_of(bdir);
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
     switch (ptype_of(p->board[sq])) {
@@ -627,7 +623,6 @@ square_t fire(position_t *p) {
         if (bdir < 0) {  // Hit back of Pawn
           return sq;
         }
-        beam = beam_of(bdir);
         break;
       case KING:  // King
         return sq;  // sorry, game over my friend!
@@ -672,7 +667,6 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     for (int i = 0; i < NUM_PAWNS; i++) {
       if (stomped_sq == p->ploc[i]) {
         p->ploc[i] = 0;
-        break;
       }
     }
     p->key ^= zob[stomped_sq][p->board[stomped_sq]];
@@ -757,7 +751,6 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
     for (int i = 0; i < NUM_PAWNS; i++) {
       if (stomped_sq == p->ploc[i]) {
         p->ploc[i] = 0;
-        break;
       }
     }
 
