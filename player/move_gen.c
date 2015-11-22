@@ -315,65 +315,69 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
 
   int move_count = 0;
 
-  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
-    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
-    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
-      piece_t x = p->board[sq];
+  for (int i = 0; i < NUM_PAWNS + 2; i++) {
+    square_t sq = (i < NUM_PAWNS) ? p->ploc[i] : p->kloc[i - NUM_PAWNS];
 
-      ptype_t typ = ptype_of(x);
-      color_t color = color_of(x);
+    // Skip if a killed pawn
+    if (sq == 0) {
+      continue;
+    }
 
-      switch (typ) {
-        case EMPTY:
+    piece_t x = p->board[sq];
+
+    ptype_t typ = ptype_of(x);
+    color_t color = color_of(x);
+
+    switch (typ) {
+      case EMPTY:
+        break;
+      case PAWN:
+        if (laser_map[sq] == 1) continue;  // Piece is pinned down by laser.
+      case KING:
+        if (color != color_to_move) {  // Wrong color
           break;
-        case PAWN:
-          if (laser_map[sq] == 1) continue;  // Piece is pinned down by laser.
-        case KING:
-          if (color != color_to_move) {  // Wrong color
-            break;
-          }
-          // directions
-          for (int d = 0; d < 8; d++) {
-            int dest = sq + dir_of(d);
-            // Skip moves into invalid squares, squares occupied by
-            // kings, nonempty squares if x is a king, and squares with
-            // pawns of matching color
-            if (ptype_of(p->board[dest]) == INVALID ||
-                ptype_of(p->board[dest]) == KING ||
-                (typ == KING && ptype_of(p->board[dest]) != EMPTY) ||
-                (typ == PAWN && ptype_of(p->board[dest]) == PAWN &&
-                 color == color_of(p->board[dest]))) {
-              continue;    // illegal square
-            }
-
-            WHEN_DEBUG_VERBOSE(char buf[MAX_CHARS_IN_MOVE]);
-            WHEN_DEBUG_VERBOSE({
-                move_to_str(move_of(typ, (rot_t) 0, sq, dest), buf, MAX_CHARS_IN_MOVE);
-                DEBUG_LOG(1, "Before: %s ", buf);
-              });
-            tbassert(move_count < MAX_NUM_MOVES, "move_count: %d\n", move_count);
-            sortable_move_list[move_count++] = move_of(typ, (rot_t) 0, sq, dest);
-
-            WHEN_DEBUG_VERBOSE({
-                move_to_str(get_move(sortable_move_list[move_count-1]), buf, MAX_CHARS_IN_MOVE);
-                DEBUG_LOG(1, "After: %s\n", buf);
-              });
+        }
+        // directions
+        for (int d = 0; d < 8; d++) {
+          int dest = sq + dir_of(d);
+          // Skip moves into invalid squares, squares occupied by
+          // kings, nonempty squares if x is a king, and squares with
+          // pawns of matching color
+          if (ptype_of(p->board[dest]) == INVALID ||
+              ptype_of(p->board[dest]) == KING ||
+              (typ == KING && ptype_of(p->board[dest]) != EMPTY) ||
+              (typ == PAWN && ptype_of(p->board[dest]) == PAWN &&
+               color == color_of(p->board[dest]))) {
+            continue;    // illegal square
           }
 
-          // rotations - three directions possible
-          for (int rot = 1; rot < 4; ++rot) {
-            tbassert(move_count < MAX_NUM_MOVES, "move_count: %d\n", move_count);
-            sortable_move_list[move_count++] = move_of(typ, (rot_t) rot, sq, sq);
-          }
-          if (typ == KING) {  // Also generate null move
-            tbassert(move_count < MAX_NUM_MOVES, "move_count: %d\n", move_count);
-            sortable_move_list[move_count++] = move_of(typ, (rot_t) 0, sq, sq);
-          }
-          break;
-        case INVALID:
-        default:
-          tbassert(false, "Bogus, man.\n");  // Couldn't BE more bogus!
-      }
+          WHEN_DEBUG_VERBOSE(char buf[MAX_CHARS_IN_MOVE]);
+          WHEN_DEBUG_VERBOSE({
+              move_to_str(move_of(typ, (rot_t) 0, sq, dest), buf, MAX_CHARS_IN_MOVE);
+              DEBUG_LOG(1, "Before: %s ", buf);
+            });
+          tbassert(move_count < MAX_NUM_MOVES, "move_count: %d\n", move_count);
+          sortable_move_list[move_count++] = move_of(typ, (rot_t) 0, sq, dest);
+
+          WHEN_DEBUG_VERBOSE({
+              move_to_str(get_move(sortable_move_list[move_count-1]), buf, MAX_CHARS_IN_MOVE);
+              DEBUG_LOG(1, "After: %s\n", buf);
+            });
+        }
+
+        // rotations - three directions possible
+        for (int rot = 1; rot < 4; ++rot) {
+          tbassert(move_count < MAX_NUM_MOVES, "move_count: %d\n", move_count);
+          sortable_move_list[move_count++] = move_of(typ, (rot_t) rot, sq, sq);
+        }
+        if (typ == KING) {  // Also generate null move
+          tbassert(move_count < MAX_NUM_MOVES, "move_count: %d\n", move_count);
+          sortable_move_list[move_count++] = move_of(typ, (rot_t) 0, sq, sq);
+        }
+        break;
+      case INVALID:
+      default:
+        tbassert(false, "Bogus, man.\n");  // Couldn't BE more bogus!
     }
   }
 
