@@ -251,14 +251,14 @@ int pawnpin(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE
   int pinned_pawns = 0;
 
   // Figure out which pawns are not pinned down by the laser.
-  for (int i = 0; i < NUM_PAWNS; i++) {
+  for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
 
-    square_t sq = p->ploc[i];
+    square_t sq = p->ploc[color][i];
     if (sq == 0) {
       continue;
     }
-    if (opposite_color_laser_map[sq] == 0 &&
-        color_of(p->board[sq]) == color) {
+    if (opposite_color_laser_map[sq] == 0) {// &&
+        //color_of(p->board[sq]) == color) {
       pinned_pawns += 1;
     }
   }
@@ -334,9 +334,11 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
 
   // Fire laser, recording in laser_map
   square_t sq = np.kloc[c];
+  fil_t f = fil_of(sq);
+  rnk_t r = rnk_of(sq);
   int bdir = ori_of(np.board[sq]);
   int beam = beam_of(bdir);
-  h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
+  h_attackable += h_dist(f, r, o_king_sq);
 
   while (true) {
     sq += beam;
@@ -344,18 +346,18 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
 
     switch (ptype_of(p->board[sq])) {
       case EMPTY:  // empty square
-        h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
+        h_attackable += h_dist(f, r, o_king_sq);
         break;
       case PAWN:  // Pawn
         bdir = reflect_of(bdir, ori_of(p->board[sq]));
-        h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
+        h_attackable += h_dist(f, r, o_king_sq);
         if (bdir < 0) {  // Hit back of Pawn
           return h_attackable;
         }
         beam = beam_of(bdir);
         break;
       case KING:  // King
-        h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
+        h_attackable += h_dist(f, r, o_king_sq);
         return h_attackable;
         break;
       case INVALID:  // Ran off edge of board
@@ -380,35 +382,36 @@ score_t eval(position_t *p, bool verbose) {
   //  int corner[2][2] = { {INF, INF}, {INF, INF} };
   ev_score_t bonus;
   char buf[MAX_CHARS_IN_MOVE];
+  for (int c = 0; c < 2; c++) {
+    for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
+      square_t sq = p->ploc[c][i];
+      if (sq == 0) {
+        continue;
+      }
+      //piece_t x = p->board[sq];
+      //color_t c = color_of(x);
+      bonus = PAWN_EV_VALUE;
+      if (verbose) {
+        printf("MATERIAL bonus %d for %s Pawn on %s\n", bonus, color_to_str(c), buf);
+      }
+      score[c] += bonus;
 
-  for (int i = 0; i < NUM_PAWNS; i++) {
-    square_t sq = p->ploc[i];
-    if (sq == 0) {
-      continue;
-    }
-    piece_t x = p->board[sq];
-    color_t c = color_of(x);
-    bonus = PAWN_EV_VALUE;
-    if (verbose) {
-      printf("MATERIAL bonus %d for %s Pawn on %s\n", bonus, color_to_str(c), buf);
-    }
-    score[c] += bonus;
+      // PBETWEEN heuristic
+      fil_t f = fil_of(sq);
+      rnk_t r = rnk_of(sq);
+      bonus = pbetween(p, f, r);
+      if (verbose) {
+        printf("PBETWEEN bonus %d for %s Pawn on %s\n", bonus, color_to_str(c), buf);
+      }
+      score[c] += bonus;
 
-    // PBETWEEN heuristic
-    fil_t f = fil_of(sq);
-    rnk_t r = rnk_of(sq);
-    bonus = pbetween(p, f, r);
-    if (verbose) {
-      printf("PBETWEEN bonus %d for %s Pawn on %s\n", bonus, color_to_str(c), buf);
+      // PCENTRAL heuristic
+      bonus = pcentral(f, r);
+      if (verbose) {
+        printf("PCENTRAL bonus %d for %s Pawn on %s\n", bonus, color_to_str(c), buf);
+      }
+      score[c] += bonus;
     }
-    score[c] += bonus;
-
-    // PCENTRAL heuristic
-    bonus = pcentral(f, r);
-    if (verbose) {
-      printf("PCENTRAL bonus %d for %s Pawn on %s\n", bonus, color_to_str(c), buf);
-    }
-    score[c] += bonus;
   }
 
   square_t wk = p->kloc[WHITE];

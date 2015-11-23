@@ -56,8 +56,14 @@ int check_position_integrity(position_t *p) {
     for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       if (ptype_of(p->board[sq]) == PAWN) {
         int pawn_found = 0;
-        for (int i = 0; i < NUM_PAWNS; i++) {
-          if (p->ploc[i] == sq) {
+        for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
+          if (p->ploc[WHITE][i] == sq) {
+            pawn_found = 1;
+            break;
+          }
+        }
+        for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
+          if (p->ploc[BLACK][i] == sq) {
             pawn_found = 1;
             break;
           }
@@ -83,9 +89,11 @@ int check_pawn_counts(position_t *p) {
     }
   }
   int ploc_count = 0;
-  for (int i = 0; i < NUM_PAWNS; i++) {
-    if (p->ploc[i] != 0) {
-      ploc_count++;
+  for (int c = 0; c < 2; c++) {
+    for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
+      if (p->ploc[c][i] != 0) {
+        ploc_count++;
+      }
     }
   }
   if (ploc_count == live_pawn_count) {
@@ -455,10 +463,9 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
 
   square_t k = p->kloc[color_to_move];
   move_count = generate_king_moves(p, k, sortable_move_list, move_count);
-  for (int i = 0; i < NUM_PAWNS; i++) {
-    square_t pawn = p->ploc[i];
-    piece_t x = p->board[pawn];
-    if (pawn != 0 && color_of(x) == color_to_move) {
+  for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
+    square_t pawn = p->ploc[color_to_move][i];
+    if (pawn != 0) {
       move_count = generate_pawn_moves(p, pawn, color_to_move, sortable_move_list, move_count, laser_map);
     }
   }
@@ -555,9 +562,9 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
       // board.
       stomped_dst_sq = from_sq;
     } else if (PAWN == from_typ && EMPTY == to_typ){
-      for (int i = 0; i < NUM_PAWNS; i++) {
-        if (from_sq == p->ploc[i]) {
-          p->ploc[i] = to_sq;
+      for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
+        if (from_sq == p->ploc[from_color][i]) {
+          p->ploc[from_color][i] = to_sq;
           break;
         }
       }
@@ -669,9 +676,10 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
 
     p->key ^= zob[stomped_sq][p->victims.stomped];   // remove from board
     p->board[stomped_sq] = 0;
-    for (int i = 0; i < NUM_PAWNS; i++) {
-      if (stomped_sq == p->ploc[i]) {
-        p->ploc[i] = 0;
+    color_t stomped_color = color_of(stomped_sq);
+    for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
+      if (stomped_sq == p->ploc[stomped_color][i]) {
+        p->ploc[stomped_color][i] = 0;
         break;
       }
     }
@@ -689,6 +697,7 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
 
   // move phase 2 - shooting the laser
   square_t victim_sq = fire(p);
+  color_t victim_color = color_of(victim_sq);
 
   WHEN_DEBUG_VERBOSE({
       if (victim_sq != 0) {
@@ -709,9 +718,10 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->victims.zapped = p->board[victim_sq];
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     p->board[victim_sq] = 0;
-    for (int i = 0; i < NUM_PAWNS; i++) {
-      if (victim_sq == p->ploc[i]) {
-        p->ploc[i] = 0;
+    for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
+      if (victim_sq == p->ploc[victim_color][i]) {
+        p->ploc[victim_color][i] = 0;
+        break;
       }
     }
     p->key ^= zob[victim_sq][0];
@@ -754,9 +764,10 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
     move_t mv = get_move(lst[i]);
 
     square_t stomped_sq = low_level_make_move(p, &np, mv);  // make the move baby!
-    for (int i = 0; i < NUM_PAWNS; i++) {
-      if (stomped_sq == p->ploc[i]) {
-        p->ploc[i] = 0;
+    color_t stomped_color = color_of(stomped_sq);
+    for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
+      if (stomped_sq == p->ploc[stomped_color][i]) {
+        p->ploc[stomped_color][i] = 0;
         break;
       }
     }
@@ -773,6 +784,7 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
     }
 
     square_t victim_sq = fire(&np);  // the guy to disappear
+    color_t victim_color = color_of(victim_sq);
 
     if (victim_sq != 0) {            // hit a piece
       ptype_t typ = ptype_of(np.board[victim_sq]);
@@ -783,9 +795,10 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
       }
       np.victims.zapped = np.board[victim_sq];
       np.key ^= zob[victim_sq][np.victims.zapped];   // remove from board
-      for (int i = 0; i < NUM_PAWNS; i++) {
-        if (victim_sq == np.ploc[i]) {
-          np.ploc[i] = 0;
+      for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
+        if (victim_sq == np.ploc[victim_color][i]) {
+          np.ploc[victim_color][i] = 0;
+          break;
         }
       }
       np.board[victim_sq] = 0;

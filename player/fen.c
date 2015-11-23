@@ -353,25 +353,34 @@ int fen_to_pos(position_t *p, char *fen) {
   // King check
 
   int Kings[2] = {0, 0};
-  int pawn_index = 0;
+  int pawn_index[2] = {0, 0};
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
     square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
     for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       piece_t x = p->board[sq];
       ptype_t typ = ptype_of(x);
+      color_t c = color_of(x);
       if (typ == KING) {
-        Kings[color_of(x)]++;
-        p->kloc[color_of(x)] = sq;
+        Kings[c]++;
+        p->kloc[c] = sq;
       } else if (typ == PAWN) {
-        p->ploc[pawn_index] = sq;
-        pawn_index++;
+        p->ploc[c][pawn_index[c]] = sq;
+        pawn_index[c]++;
       }
     }
   }
 
+  for (; pawn_index[WHITE] < NUM_PAWNS_PER_SIDE; pawn_index[WHITE]++) {
+    p->ploc[WHITE][pawn_index[WHITE]] = 0;
+  }
+
+  for (; pawn_index[BLACK] < NUM_PAWNS_PER_SIDE; pawn_index[BLACK]++) {
+    p->ploc[BLACK][pawn_index[BLACK]] = 0;
+  }
+  /*
   for (; pawn_index < NUM_PAWNS; pawn_index++) {
     p->ploc[pawn_index] = 0;
-  }
+  }*/
 
   tbassert(check_position_integrity(p), "pawn positions incorrect");
   tbassert(check_pawn_counts(p), "pawn counts are off");
