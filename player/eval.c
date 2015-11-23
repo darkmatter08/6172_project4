@@ -332,10 +332,8 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
 
   // Fire laser, recording in laser_map
   square_t sq = np.kloc[c];
-  fil_t f = fil_of(sq);
-  rnk_t r = rnk_of(sq);
   int bdir = ori_of(np.board[sq]);
-  h_attackable += h_dist(f, r, o_king_sq);
+  h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
 
   while (true) {
     sq += beam_of(bdir);
@@ -343,17 +341,17 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
 
     switch (ptype_of(p->board[sq])) {
       case EMPTY:  // empty square
-        h_attackable += h_dist(f, r, o_king_sq);
+        h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
         break;
       case PAWN:  // Pawn
         bdir = reflect_of(bdir, ori_of(p->board[sq]));
-        h_attackable += h_dist(f, r, o_king_sq);
+        h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
         if (bdir < 0) {  // Hit back of Pawn
           return h_attackable;
         }
         break;
       case KING:  // King
-        h_attackable += h_dist(f, r, o_king_sq);
+        h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
         return h_attackable;
         break;
       case INVALID:  // Ran off edge of board
