@@ -376,7 +376,7 @@ score_t eval(position_t *p, bool verbose) {
   //  int corner[2][2] = { {INF, INF}, {INF, INF} };
   ev_score_t bonus;
   char buf[MAX_CHARS_IN_MOVE];
-  for (int c = 0; c < 2; c++) {
+  for (color_t c = 0; c < 2; c++) {
     for (int i = 0; i < NUM_PAWNS_PER_SIDE; i++) {
       square_t sq = p->ploc[c][i];
       if (sq == 0) {
