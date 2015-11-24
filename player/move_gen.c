@@ -531,6 +531,10 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
 
   piece_t from_piece = p->board[from_sq];
   piece_t to_piece = p->board[to_sq];
+  ptype_t from_type = ptype_of(from_piece);
+  ptype_t to_type = ptype_of(to_piece);
+  color_t from_color = color_of(from_piece);
+  color_t to_color = color_of(to_piece);
 
   // Pieces block each other, unless a pawn is stomping an enemy pawn
   tbassert(EMPTY == ptype_of(to_piece) ||
@@ -544,14 +548,14 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
            color_of(from_piece), color_of(to_piece));
 
   if (to_sq != from_sq) {  // move, not rotation
-    if (PAWN == ptype_of(from_piece) &&
-        PAWN == ptype_of(to_piece) &&
-        color_of(to_piece) == opp_color(color_of(from_piece))) {
+    if (PAWN == from_type &&
+        PAWN == to_type &&
+        to_color != from_color) {
       // We're stomping a piece.  Return the destination of the
       // stomped piece.  Let the caller remove the piece from the
       // board.
       stomped_dst_sq = from_sq;
-    } else if (PAWN == ptype_of(from_piece) && EMPTY == ptype_of(to_piece)){
+    } else if (PAWN == from_type && EMPTY == to_type){
       for (int i = 0; i < NUM_PAWNS; i++) {
         if (from_sq == p->ploc[i]) {
           p->ploc[i] = to_sq;
@@ -571,11 +575,11 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
     p->key ^= zob[from_sq][to_piece];  // place to_piece in from_sq
 
     // Update King locations if necessary
-    if (ptype_of(from_piece) == KING) {
-      p->kloc[color_of(from_piece)] = to_sq;
+    if (from_type == KING) {
+      p->kloc[from_color] = to_sq;
     }
-    if (ptype_of(to_piece) == KING) {
-      p->kloc[color_of(to_piece)] = from_sq;
+    if (to_type == KING) {
+      p->kloc[to_color] = from_sq;
     }
 
   } else {  // rotation
