@@ -206,9 +206,6 @@ void mark_laser_path(position_t *p, char *laser_map, color_t c,
   // Fire laser, recording in laser_map
   square_t sq = np.kloc[c];
   int bdir = ori_of(np.board[sq]);
-  /* printf("\nsq is %d\n", sq);
-   * printf("sq rnk: %d, sq fil: %d\n", rnk_of(sq), fil_of(sq));
-   * printf("bdir is %d\n", beam_of(bdir)); */
 
   tbassert(ptype_of(np.board[sq]) == KING,
            "ptype: %d\n", ptype_of(np.board[sq]));
@@ -217,19 +214,13 @@ void mark_laser_path(position_t *p, char *laser_map, color_t c,
   while (true) {
     sq += beam_of(bdir);
     if (sq >= ARR_SIZE || sq < 0 ||
-        (beam_of(bdir) == 1 && (sq % ARR_WIDTH) == 0) ||
-        (beam_of(bdir) == -1 && (sq % ARR_WIDTH) == (ARR_WIDTH - 1))) {
-      /* printf("bdir is %d\n", beam_of(bdir)); */
-      /* printf("return because out of bounds\n"); */
+        (beam_of(bdir) == 1 && rnk_of(sq) == 0) ||
+        (beam_of(bdir) == -1 && rnk_of(sq) == (ARR_WIDTH - 1))) {
       return;
     }
-    /* printf("\nsq is %d\n", sq);
-     * printf("sq rnk: %d, sq fil: %d\n", rnk_of(sq), fil_of(sq));
-     * printf("bdir is %d\n", beam_of(bdir)); */
 
     laser_map[sq] |= mark_mask;
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
-    /* printf("ptype: %d\n", ptype_of((p->board[sq]))); */
 
     switch (ptype_of(p->board[sq])) {
       case EMPTY:  // empty square
@@ -470,14 +461,15 @@ score_t eval(position_t *p, bool verbose) {
   // score from WHITE point of view
   ev_score_t tot = score[WHITE] - score[BLACK];
 
-  if (RANDOMIZE) {
-    ev_score_t  z = rand_r(&seed) % (RANDOMIZE*2+1);
-    tot = tot + z - RANDOMIZE;
-  }
+  /* if (RANDOMIZE) { */
+  /*   ev_score_t  z = rand_r(&seed) % (RANDOMIZE*2+1); */
+  /*   tot = tot + z - RANDOMIZE; */
+  /* } */
 
   if (color_to_move_of(p) == BLACK) {
     tot = -tot;
   }
-
+  ev_score_t r = tot / EV_SCORE_RATIO;
+  printf("%d %d\n", p->key, r);
   return tot / EV_SCORE_RATIO;
 }

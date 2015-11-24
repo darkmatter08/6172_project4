@@ -403,8 +403,8 @@ int generate_king_moves(position_t *p, square_t sq, sortable_move_t *sortable_mo
     piece_t piece = p->board[dest];
     ptype_t typ = ptype_of(piece);
     if (typ == EMPTY && (dest >= 0 && dest < ARR_SIZE) &&
-        !(dir_of(d) == 1 && (sq % ARR_WIDTH) == 0) &&
-        !(dir_of(d) == -1 && (sq % ARR_WIDTH) == (ARR_WIDTH - 1)) &&
+        !(dir_of(d) == -1 && rnk_of(sq) == 0) &&
+        !(dir_of(d) == 1 && rnk_of(sq) == ARR_WIDTH - 1) &&
         ABS(rnk_of(sq) - rnk_of(dest)) <= 1 &&
         ABS(fil_of(sq) - fil_of(dest)) <= 1) {
       sortable_move_list[move_count++] = move_of(KING, (rot_t) 0, sq, dest);
@@ -420,12 +420,6 @@ int generate_king_moves(position_t *p, square_t sq, sortable_move_t *sortable_mo
 
 int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *sortable_move_list, int move_count, char *laser_map) {
   if (laser_map[sq] == 1) {
-    /* printf("laser skipping %d\n", sq); */
-    for (int i = 0; i < ARR_SIZE; i++) {
-      if (laser_map[i] != 0) {
-        /* printf("%d %d is marked %d \n", rnk_of(i), fil_of(i), laser_map[i]); */
-      }
-    }
     return move_count;
   }
 
@@ -433,9 +427,9 @@ int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *
     int dest = sq + dir_of(d);
     piece_t piece = p->board[dest];
     ptype_t typ = ptype_of(piece);
-    if ((typ == EMPTY || (typ == PAWN && color_of(piece) != c)) && (dest >= 0 && dest < ARR_SIZE) &&
-        !(dir_of(d) == 1 && (sq % ARR_WIDTH) == 0) &&
-        !(dir_of(d) == -1 && (sq % ARR_WIDTH) == (ARR_WIDTH - 1)) &&
+    if (typ == EMPTY && (dest >= 0 && dest < ARR_SIZE) &&
+        !(dir_of(d) == -1 && rnk_of(sq) == 0) &&
+        !(dir_of(d) == 1 && rnk_of(sq) == ARR_WIDTH - 1) &&
         ABS(rnk_of(sq) - rnk_of(dest)) <= 1 &&
         ABS(fil_of(sq) - fil_of(dest)) <= 1) {
       sortable_move_list[move_count++] = move_of(PAWN, (rot_t) 0, sq, dest);
@@ -470,14 +464,17 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   for (int i = 0; i < NUM_PAWNS; i++) {
     square_t pawn = p->ploc[i];
     piece_t x = p->board[pawn];
-    /* printf("pawn sq is %d\n", pawn); */
     if (pawn != INVALID_SQ && color_of(x) == color_to_move) {
       move_count = generate_pawn_moves(p, pawn, color_to_move, sortable_move_list, move_count, laser_map);
-    } else {
-      /* printf("skipping\n"); */
     }
   }
-
+  /* printf("pos  hash: %d\n", p->key);
+   * printf("%d\n", move_count);
+   * for (int i = 0; i < move_count; ++i) {
+   *   char buf[MAX_CHARS_IN_MOVE];
+   *   move_to_str(get_move(sortable_move_list[i]), buf, MAX_CHARS_IN_MOVE);
+   *   /\* printf("%s\n", buf); *\/
+   * } */
   return move_count;
 }
 
@@ -633,24 +630,18 @@ square_t fire(position_t *p) {
         (beam_of(bdir) == -1 && (sq % ARR_WIDTH) == (ARR_WIDTH - 1))) {
       return INVALID_SQ;
     }
-    /* printf("sq is %d\n", sq); */
-    /* printf("sq rnk: %d, sq fil: %d\n", rnk_of(sq), fil_of(sq)); */
-    /* printf("bdir is %d\n", beam_of(bdir)); */
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
     switch (ptype_of(p->board[sq])) {
       case EMPTY:  // empty square
         break;
       case PAWN:  // Pawn
-        /* printf("hit pawn %d\n", sq); */
         bdir = reflect_of(bdir, ori_of(p->board[sq]));
         if (bdir < 0) {  // Hit back of Pawn
           return sq;
         }
         break;
       case KING:  // King
-        /* printf("hit king %d\n", sq); */
-        /* printf("rnk: %d, fil: %d\n", rnk_of(sq), fil_of(sq)); */
         return sq;  // sorry, game over my friend!
         break;
       case INVALID:  // Ran off edge of board
