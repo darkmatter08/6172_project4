@@ -555,6 +555,7 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
       for (int i = 0; i < NUM_PAWNS; i++) {
         if (from_sq == p->ploc[i]) {
           p->ploc[i] = to_sq;
+          break;
         }
       }
     }
@@ -669,6 +670,7 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     for (int i = 0; i < NUM_PAWNS; i++) {
       if (stomped_sq == p->ploc[i]) {
         p->ploc[i] = 0;
+        break;
       }
     }
     p->key ^= zob[stomped_sq][p->board[stomped_sq]];
@@ -708,6 +710,7 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     for (int i = 0; i < NUM_PAWNS; i++) {
       if (victim_sq == p->ploc[i]) {
         p->ploc[i] = 0;
+        break;
       }
     }
     p->key ^= zob[victim_sq][0];
@@ -753,6 +756,7 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
     for (int i = 0; i < NUM_PAWNS; i++) {
       if (stomped_sq == p->ploc[i]) {
         p->ploc[i] = 0;
+        break;
       }
     }
 
@@ -781,6 +785,7 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
       for (int i = 0; i < NUM_PAWNS; i++) {
         if (victim_sq == np.ploc[i]) {
           np.ploc[i] = 0;
+          break;
         }
       }
       np.board[victim_sq] = 0;
