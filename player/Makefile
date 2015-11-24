@@ -27,11 +27,15 @@ endif
 ifeq ($(DEBUG),1)
 	CFLAGS += -O0 -DDEBUG $(PFLAG)
 else
-	CFLAGS += -O3 -fcilkplus -DNDEBUG $(PFLAG)
+	CFLAGS += -Ofast -fcilkplus -DNDEBUG $(PFLAG)
 endif
 
 ifeq ($(REFERENCE),1)
 	CFLAGS += -DRUN_REFERENCE_CODE=1
+endif
+
+ifeq ($(VECTORIZE),1)
+  CFLAGS += -mavx2
 endif
 
 CFLAGS += $(OTHER_CFLAGS)
