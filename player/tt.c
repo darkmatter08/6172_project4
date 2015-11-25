@@ -170,6 +170,7 @@ ttRec_t *tt_hashtable_get(uint64_t key) {
   for (int i = 0; i < RECORDS_PER_SET; i++, rec++) {
     if (rec->key == key) {  // found the record that we are looking for
       found = rec;
+      break;
     }
   }
   return found;
