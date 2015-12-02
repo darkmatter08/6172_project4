@@ -60,6 +60,7 @@ int check_position_integrity(position_t *p) {
           for (int i = 0; i < HALF_NUM_PAWNS; i++) {
             if (p->ploc[color][i] == sq) {
               pawn_found = 1;
+              color = 2; // Needed to break out of outer loop
               break;
             }
           }
@@ -586,6 +587,7 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
         for (int i = 0; i < HALF_NUM_PAWNS; i++) {
           if (from_sq == p->ploc[color][i]) {
             p->ploc[color][i] = to_sq;
+            color = 2; // Needed to break out of outer loop
             break;
           }
         }
@@ -703,6 +705,7 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
       for (int i = 0; i < HALF_NUM_PAWNS; i++) {
         if (stomped_sq == p->ploc[color][i]) {
           p->ploc[color][i] = 0;
+          color = 2; // Needed to break
           break;
         }
       }
@@ -745,6 +748,7 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
       for (int i = 0; i < HALF_NUM_PAWNS; i++) {
         if (victim_sq == p->ploc[color][i]) {
           p->ploc[color][i] = 0;
+          color = 2; // Needed to break
           break;
         }
       }
@@ -793,6 +797,7 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
       for (int i = 0; i < HALF_NUM_PAWNS; i++) {
         if (stomped_sq == p->ploc[color][i]) {
           p->ploc[color][i] = 0;
+          color = 2; // Needed to break
           break;
         }
       }
@@ -824,6 +829,7 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
         for (int i = 0; i < HALF_NUM_PAWNS; i++) {
           if (victim_sq == np.ploc[color][i]) {
             np.ploc[color][i] = 0;
+            color = 2; // Needed to break
             break;
           }
         }

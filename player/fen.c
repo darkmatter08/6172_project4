@@ -370,12 +370,12 @@ int fen_to_pos(position_t *p, char *fen) {
     }
   }
 
-  int white_pawn_index = pawn_indices[0];
+  int white_pawn_index = pawn_indices[WHITE];
   for (; white_pawn_index < HALF_NUM_PAWNS; white_pawn_index++) {
     p->ploc[WHITE][white_pawn_index] = 0;
   }
 
-  int black_pawn_index = pawn_indices[1];
+  int black_pawn_index = pawn_indices[BLACK];
   for (; black_pawn_index < HALF_NUM_PAWNS; black_pawn_index++) {
     p->ploc[BLACK][black_pawn_index] = 0;
   }
