@@ -77,7 +77,7 @@ move_t get_move(sortable_move_t sortable_mv) {
   return (move_t) (sortable_mv & MOVE_MASK);
 }
 
-static score_t get_draw_score(position_t *p, int ply) {
+static score_t inline get_draw_score(position_t *p, int ply) {
   position_t *x = p->history;
   uint64_t cur = p->key;
   score_t score;
@@ -106,7 +106,7 @@ static score_t get_draw_score(position_t *p, int ply) {
 
 
 // Detect move repetition
-static bool is_repeated(position_t *p, int ply) {
+static bool inline is_repeated(position_t *p, int ply) {
   score_t score = 0;
   if (!DETECT_DRAWS) {
     return score;  // no draw detected
@@ -142,7 +142,7 @@ static bool is_repeated(position_t *p, int ply) {
 // check the victim pieces returned by the move to determine if it's a
 // game-over situation.  If so, also calculate the score depending on
 // the pov (which player's point of view)
-static bool is_game_over(victims_t victims, int pov, int ply) {
+static bool inline is_game_over(victims_t victims, int pov, int ply) {
   tbassert(ptype_of(victims.stomped) != KING, "Stomped a king.\n");
   if (ptype_of(victims.zapped) == KING) {
     return true;
@@ -150,7 +150,7 @@ static bool is_game_over(victims_t victims, int pov, int ply) {
   return false;
 }
 
-static score_t get_game_over_score(victims_t victims, int pov, int ply) {
+static inline score_t get_game_over_score(victims_t victims, int pov, int ply) {
   tbassert(ptype_of(victims.stomped) != KING, "Stomped a king.\n");
   score_t score;
   if (color_of(victims.zapped) == WHITE) {
@@ -166,7 +166,7 @@ static score_t get_game_over_score(victims_t victims, int pov, int ply) {
   return score;
 }
 
-static void getPV(move_t *pv, char *buf, size_t bufsize) {
+static void inline getPV(move_t *pv, char *buf, size_t bufsize) {
   buf[0] = 0;
 
   for (int i = 0; i < (MAX_PLY_IN_SEARCH - 1) && pv[i] != 0; i++) {
@@ -375,7 +375,7 @@ moveEvaluationResult evaluateMove(searchNode *node, move_t mv, move_t killer_a,
 }
 
 // Incremental sort of the move list.
-void sort_incremental(sortable_move_t *move_list, int num_of_moves, int mv_index) {
+void inline sort_incremental(sortable_move_t *move_list, int num_of_moves, int mv_index) {
   // Return on the last one because it is already sorted and our for loop starts
   // at mv_index + 1
   if (mv_index == num_of_moves - 1) {

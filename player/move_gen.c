@@ -167,7 +167,7 @@ void init_zob() {
 
 
 // For no square, use 0, which is guaranteed to be off board
-square_t square_of(fil_t f, rnk_t r) {
+square_t inline square_of(fil_t f, rnk_t r) {
   square_t s = ARR_WIDTH * (FIL_ORIGIN + f) + RNK_ORIGIN + r;
   DEBUG_LOG(1, "Square of (file %d, rank %d) is %d\n", f, r, s);
   tbassert((s >= 0) && (s < ARR_SIZE), "s: %d\n", s);
@@ -175,7 +175,7 @@ square_t square_of(fil_t f, rnk_t r) {
 }
 
 // Finds file of square
-fil_t fil_of(square_t sq) {
+fil_t inline fil_of(square_t sq) {
   fil_t f = sq / ARR_WIDTH - FIL_ORIGIN;
   //fil_t f = ((sq >> FIL_SHIFT) & FIL_MASK) - FIL_ORIGIN;
   DEBUG_LOG(1, "File of square %d is %d\n", sq, f);
@@ -183,7 +183,7 @@ fil_t fil_of(square_t sq) {
 }
 
 // Finds rank of square
-rnk_t rnk_of(square_t sq) {
+rnk_t inline rnk_of(square_t sq) {
   rnk_t r = sq % ARR_WIDTH - RNK_ORIGIN;
   //rnk_t r = ((sq >> RNK_SHIFT) & RNK_MASK) - RNK_ORIGIN;
   DEBUG_LOG(1, "Rank of square %d is %d\n", sq, r);
@@ -191,7 +191,7 @@ rnk_t rnk_of(square_t sq) {
 }
 
 // converts a square to string notation, returns number of characters printed
-int square_to_str(square_t sq, char *buf, size_t bufsize) {
+int inline square_to_str(square_t sq, char *buf, size_t bufsize) {
   fil_t f = fil_of(sq);
   rnk_t r = rnk_of(sq);
   if (f >= 0) {
@@ -204,7 +204,7 @@ int square_to_str(square_t sq, char *buf, size_t bufsize) {
 // direction map
 static int dir[8] = { -ARR_WIDTH - 1, -ARR_WIDTH, -ARR_WIDTH + 1, -1, 1,
                       ARR_WIDTH - 1, ARR_WIDTH, ARR_WIDTH + 1 };
-int dir_of(int i) {
+int inline dir_of(int i) {
   tbassert(i >= 0 && i < 8, "i: %d\n", i);
   return dir[i];
 }
@@ -213,7 +213,7 @@ int dir_of(int i) {
 // directions for laser: NN, EE, SS, WW
 static int beam[NUM_ORI] = {1, ARR_WIDTH, -1, -ARR_WIDTH};
 
-int beam_of(int direction) {
+int inline beam_of(int direction) {
   tbassert(direction >= 0 && direction < NUM_ORI, "dir: %d\n", direction);
   return beam[direction];
 }
@@ -228,7 +228,7 @@ int reflect[NUM_ORI][NUM_ORI] = {
   { -1, NN, SS, -1 }   // WW
 };
 
-int reflect_of(int beam_dir, int pawn_ori) {
+int inline reflect_of(int beam_dir, int pawn_ori) {
   tbassert(beam_dir >= 0 && beam_dir < NUM_ORI, "beam-dir: %d\n", beam_dir);
   tbassert(pawn_ori >= 0 && pawn_ori < NUM_ORI, "pawn-ori: %d\n", pawn_ori);
   return reflect[beam_dir][pawn_ori];
@@ -263,7 +263,7 @@ move_t move_of(ptype_t typ, rot_t rot, square_t from_sq, square_t to_sq) {
 
 
 // converts a move to string notation for FEN
-void move_to_str(move_t mv, char *buf, size_t bufsize) {
+void inline move_to_str(move_t mv, char *buf, size_t bufsize) {
   square_t f = from_square(mv);  // from-square
   square_t t = to_square(mv);    // to-square
   rot_t r = rot_of(mv);          // rotation
@@ -392,7 +392,7 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
   return move_count;
 }
 
-int generate_king_moves(position_t *p, square_t sq, sortable_move_t *sortable_move_list, int move_count) {
+int inline generate_king_moves(position_t *p, square_t sq, sortable_move_t *sortable_move_list, int move_count) {
   for (int d = 0; d < 8; d++) {
     int dest = sq + dir_of(d);
     piece_t piece = p->board[dest];
@@ -409,7 +409,7 @@ int generate_king_moves(position_t *p, square_t sq, sortable_move_t *sortable_mo
   return move_count;
 }
 
-int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *sortable_move_list, int move_count, char *laser_map) {
+int inline generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *sortable_move_list, int move_count, char *laser_map) {
   if (laser_map[sq] == 1) {
     return move_count;
   }
@@ -431,7 +431,7 @@ int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *
 
 // Generate all moves from position p.  Returns number of moves.
 // strict currently ignored
-int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
+int inline generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
                  bool strict) {
   color_t color_to_move = color_to_move_of(p);
   // Make sure that the enemy_laser map is marked
@@ -466,7 +466,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   return move_count;
 }
 
-void swap_positions(position_t *old, position_t *p) {
+void inline swap_positions(position_t *old, position_t *p) {
   p->ply = old->ply;
   p->key = old->key;
 

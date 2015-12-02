@@ -76,7 +76,7 @@ static score_t scout_search(searchNode *node, int depth,
 
 // Initializes a PV (principle variation node)
 //   https://chessprogramming.wikispaces.com/Node+Types#PV
-static void initialize_pv_node(searchNode* node, int depth) {
+static void inline initialize_pv_node(searchNode* node, int depth) {
   node->type = SEARCH_PV;
   node->alpha = -node->parent->beta;
   node->orig_alpha = node->alpha;  // Save original alpha.
@@ -200,7 +200,7 @@ static score_t searchPV(searchNode *node, int depth, uint64_t *node_count_serial
 //
 // This handles scout search logic for the first level of the search tree
 // -----------------------------------------------------------------------------
-static void initialize_root_node(searchNode *node, score_t alpha, score_t beta, int depth,
+static void inline initialize_root_node(searchNode *node, score_t alpha, score_t beta, int depth,
                             int ply, position_t* p) {
   node->type = SEARCH_ROOT;
   node->alpha = alpha;
