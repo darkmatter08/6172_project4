@@ -114,38 +114,40 @@ void tt_hashtable_put(uint64_t key, int depth, score_t score,
   ttRec_t *curr_rec = hashtable.tt_set[set_index].records;
   // best record to replace that we found so far
   ttRec_t *rec_to_replace = curr_rec;
-  int replacemt_val = -99;            // value of doing the replacement
-
   move = move & MOVE_MASK;
+  if (RECORDS_PER_SET > 1) {
+    int replacemt_val = -99;            // value of doing the replacement
 
-  for (int i = 0; i < RECORDS_PER_SET; i++, curr_rec++) {
-    int value = 0;  // points for sorting
 
-    // always use entry if it's not used or has same key
-    if (!curr_rec->key || key == curr_rec->key) {
-      if (move == 0) {
-        move = curr_rec->move;
+    for (int i = 0; i < RECORDS_PER_SET; i++, curr_rec++) {
+      int value = 0;  // points for sorting
+
+      // always use entry if it's not used or has same key
+      if (!curr_rec->key || key == curr_rec->key) {
+        if (move == 0) {
+          move = curr_rec->move;
+        }
+        curr_rec->key = key;
+        curr_rec->quality = depth;
+        curr_rec->move = move;
+        curr_rec->age = hashtable.age;
+        curr_rec->score = score;
+        curr_rec->bound = (ttBound_t) bound_type;
+
+        return;
       }
-      curr_rec->key = key;
-      curr_rec->quality = depth;
-      curr_rec->move = move;
-      curr_rec->age = hashtable.age;
-      curr_rec->score = score;
-      curr_rec->bound = (ttBound_t) bound_type;
 
-      return;
-    }
-
-    // otherwise, potential candidate for replacement
-    if (curr_rec->age == hashtable.age) {
-      value -= 6;   // prefer not to replace if same age
-    }
-    if (curr_rec->quality < rec_to_replace->quality) {
-      value += 1;   // prefer to replace if worse quality
-    }
-    if (value > replacemt_val) {
-      replacemt_val = value;
-      rec_to_replace = curr_rec;
+      // otherwise, potential candidate for replacement
+      if (curr_rec->age == hashtable.age) {
+        value -= 6;   // prefer not to replace if same age
+      }
+      if (curr_rec->quality < rec_to_replace->quality) {
+        value += 1;   // prefer to replace if worse quality
+      }
+      if (value > replacemt_val) {
+        replacemt_val = value;
+        rec_to_replace = curr_rec;
+      }
     }
   }
   // update the record that we are replacing with this record
@@ -229,4 +231,3 @@ bool tt_is_usable(ttRec_t *tt, int depth, score_t beta) {
 
   return false;
 }
-
