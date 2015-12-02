@@ -114,10 +114,10 @@ void tt_hashtable_put(uint64_t key, int depth, score_t score,
   ttRec_t *curr_rec = hashtable.tt_set[set_index].records;
   // best record to replace that we found so far
   ttRec_t *rec_to_replace = curr_rec;
+  move = move & MOVE_MASK;
   if (RECORDS_PER_SET > 1) {
     int replacemt_val = -99;            // value of doing the replacement
 
-    move = move & MOVE_MASK;
 
     for (int i = 0; i < RECORDS_PER_SET; i++, curr_rec++) {
       int value = 0;  // points for sorting
@@ -231,4 +231,3 @@ bool tt_is_usable(ttRec_t *tt, int depth, score_t beta) {
 
   return false;
 }
-
