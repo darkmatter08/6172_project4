@@ -12,10 +12,11 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
-#if PARALLEL
+//#if PARALLEL
 #include <cilk/cilk.h>
 #include <cilk/reducer.h>
-#endif
+#include <cilk/cilk_api.h>
+//#endif
 
 #include "./eval.h"
 #include "./fen.h"
@@ -398,6 +399,7 @@ void print_options() {
 // -----------------------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
+  __cilkrts_set_param("nworkers", "8");
   position_t *gme = (position_t *) malloc(sizeof(position_t) * MAX_PLY_IN_GAME);
 
 
