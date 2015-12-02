@@ -464,7 +464,7 @@ static int get_sortable_move_list(searchNode *node, sortable_move_t * move_list,
       ptype_t  pce = ptype_mv_of(mv);
       rot_t    ro  = rot_of(mv);   // rotation
       square_t fs  = from_square(mv);
-      int      ot  = ORI_MASK & (ori_of(node->position.board[fs]) + ro);
+      int      ot  = ORI_MASK & (ori_of(get_piece(&(node->position), fs)) + ro);
       square_t ts  = to_square(mv);
       set_sort_key(&move_list[mv_index],
                    best_move_history[BMH(fake_color_to_move, pce, ts, ot)]);

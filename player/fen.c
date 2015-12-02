@@ -35,6 +35,8 @@ static int parse_fen_board(position_t *p, char *fen) {
   // Invariant: fen[c_count] is next character to be read
   int c_count = 0;
 
+  piece_t piece;
+
   // Loop also breaks internally if (f, r) == (BOARD_WIDTH-1, 0)
   while ((c = fen[c_count++]) != '\0') {
     int ori;
@@ -70,7 +72,10 @@ static int parse_fen_board(position_t *p, char *fen) {
             fen_error(fen, c_count, "Too many squares in rank.\n");
             return 0;
           }
-          set_ptype(&p->board[square_of(f, r)], EMPTY);
+          piece = get_piece(p, square_of(f, r));
+          set_ptype(&piece, EMPTY);
+          set_piece(p, square_of(f, r), piece);
+
           c--;
         }
         break;
@@ -96,9 +101,11 @@ static int parse_fen_board(position_t *p, char *fen) {
           fen_error(fen, c_count+1, "Syntax error");
           return 0;
         }
-        set_ptype(&p->board[square_of(f, r)], typ);
-        set_color(&p->board[square_of(f, r)], WHITE);
-        set_ori(&p->board[square_of(f, r)], ori);
+        piece = get_piece(p, square_of(f, r));
+        set_ptype(&piece, typ);
+        set_color(&piece, WHITE);
+        set_ori(&piece, ori);
+        set_piece(p, square_of(f, r), piece);
         break;
 
       case 'n':
@@ -121,9 +128,11 @@ static int parse_fen_board(position_t *p, char *fen) {
           fen_error(fen, c_count+1, "Syntax error");
           return 0;
         }
-        set_ptype(&p->board[square_of(f, r)], typ);
-        set_color(&p->board[square_of(f, r)], BLACK);
-        set_ori(&p->board[square_of(f, r)], ori);
+        piece = get_piece(p, square_of(f, r));
+        set_ptype(&piece, typ);
+        set_color(&piece, BLACK);
+        set_ori(&piece, ori);
+        set_piece(p, square_of(f, r), piece);
         break;
 
       case 'S':
@@ -146,9 +155,11 @@ static int parse_fen_board(position_t *p, char *fen) {
           fen_error(fen, c_count+1, "Syntax error");
           return 0;
         }
-        set_ptype(&p->board[square_of(f, r)], typ);
-        set_color(&p->board[square_of(f, r)], WHITE);
-        set_ori(&p->board[square_of(f, r)], ori);
+        piece = get_piece(p, square_of(f, r));
+        set_ptype(&piece, typ);
+        set_color(&piece, WHITE);
+        set_ori(&piece, ori);
+        set_piece(p, square_of(f, r), piece);
         break;
 
       case 's':
@@ -171,9 +182,11 @@ static int parse_fen_board(position_t *p, char *fen) {
           fen_error(fen, c_count+1, "Syntax error");
           return 0;
         }
-        set_ptype(&p->board[square_of(f, r)], typ);
-        set_color(&p->board[square_of(f, r)], BLACK);
-        set_ori(&p->board[square_of(f, r)], ori);
+        piece = get_piece(p, square_of(f, r));
+        set_ptype(&piece, typ);
+        set_color(&piece, BLACK);
+        set_ori(&piece, ori);
+        set_piece(p, square_of(f, r), piece);
         break;
 
       case 'E':
@@ -184,9 +197,11 @@ static int parse_fen_board(position_t *p, char *fen) {
         next_c = fen[c_count++];
 
         if (next_c == 'E') {  // White King facing East
-          set_ptype(&p->board[square_of(f, r)], KING);
-          set_color(&p->board[square_of(f, r)], WHITE);
-          set_ori(&p->board[square_of(f, r)], EE);
+          piece = get_piece(p, square_of(f, r));
+          set_ptype(&piece, KING);
+          set_color(&piece, WHITE);
+          set_ori(&piece, EE);
+          set_piece(p, square_of(f, r), piece);
         } else {
           fen_error(fen, c_count+1, "Syntax error");
           return 0;
@@ -201,9 +216,11 @@ static int parse_fen_board(position_t *p, char *fen) {
         next_c = fen[c_count++];
 
         if (next_c == 'W') {  // White King facing West
-          set_ptype(&p->board[square_of(f, r)], KING);
-          set_color(&p->board[square_of(f, r)], WHITE);
-          set_ori(&p->board[square_of(f, r)], WW);
+          piece = get_piece(p, square_of(f, r));
+          set_ptype(&piece, KING);
+          set_color(&piece, WHITE);
+          set_ori(&piece, WW);
+          set_piece(p, square_of(f, r), piece);
         } else {
           fen_error(fen, c_count+1, "Syntax error");
           return 0;
@@ -218,9 +235,11 @@ static int parse_fen_board(position_t *p, char *fen) {
         next_c = fen[c_count++];
 
         if (next_c == 'e') {  // Black King facing East
-          set_ptype(&p->board[square_of(f, r)], KING);
-          set_color(&p->board[square_of(f, r)], BLACK);
-          set_ori(&p->board[square_of(f, r)], EE);
+          piece = get_piece(p, square_of(f, r));
+          set_ptype(&piece, KING);
+          set_color(&piece, BLACK);
+          set_ori(&piece, EE);
+          set_piece(p, square_of(f, r), piece);
         } else {
           fen_error(fen, c_count+1, "Syntax error");
           return 0;
@@ -235,9 +254,11 @@ static int parse_fen_board(position_t *p, char *fen) {
         next_c = fen[c_count++];
 
         if (next_c == 'w') {  // Black King facing West
-          set_ptype(&p->board[square_of(f, r)], KING);
-          set_color(&p->board[square_of(f, r)], BLACK);
-          set_ori(&p->board[square_of(f, r)], WW);
+          piece = get_piece(p, square_of(f, r));
+          set_ptype(&piece, KING);
+          set_color(&piece, BLACK);
+          set_ori(&piece, WW);
+          set_piece(p, square_of(f, r), piece);
         } else {
           fen_error(fen, c_count+1, "Syntax error");
           return 0;
@@ -342,7 +363,9 @@ int fen_to_pos(position_t *p, char *fen) {
   int c_count = 0;  // Invariant: fen[c_count] is next char to be read
 
   for (int i = 0; i < ARR_SIZE; ++i) {
-    set_ptype(&p->board[i], INVALID);  // squares are invalid until filled
+    piece_t piece = get_piece(p, i);
+    set_ptype(&piece, INVALID);  // squares are invalid until filled
+    set_piece(p, i, piece);
   }
 
   c_count = parse_fen_board(p, fen);
@@ -357,7 +380,7 @@ int fen_to_pos(position_t *p, char *fen) {
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
     square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
     for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
-      piece_t x = p->board[sq];
+      piece_t x = get_piece(p, sq);
       ptype_t typ = ptype_of(x);
       if (typ == KING) {
         Kings[color_of(x)]++;
@@ -490,26 +513,26 @@ int pos_to_fen(position_t *p, char *fen) {
     for (fil_t f = 0; f < BOARD_WIDTH; ++f) {
       square_t sq = square_of(f, r);
 
-      if (ptype_of(p->board[sq]) == INVALID) {     // invalid square
+      if (ptype_of(get_piece(p, sq)) == INVALID) {     // invalid square
         tbassert(false, "Bad news, yo.\n");        // This is bad!
       }
 
-      if (ptype_of(p->board[sq]) == EMPTY) {       // empty square
+      if (ptype_of(get_piece(p, sq)) == EMPTY) {       // empty square
         empty_in_a_row++;
         continue;
       } else {
         if (empty_in_a_row) fen[pos++] = '0' + empty_in_a_row;
         empty_in_a_row = 0;
 
-        int ori = ori_of(p->board[sq]);  // orientation
-        color_t c = color_of(p->board[sq]);
+        int ori = ori_of(get_piece(p, sq));  // orientation
+        color_t c = color_of(get_piece(p, sq));
 
-        if (ptype_of(p->board[sq]) == KING) {
+        if (ptype_of(get_piece(p, sq)) == KING) {
           for (i = 0; i < 2; i++) fen[pos++] = king_ori_to_rep[c][ori][i];
           continue;
         }
 
-        if (ptype_of(p->board[sq]) == PAWN) {
+        if (ptype_of(get_piece(p, sq)) == PAWN) {
           for (i = 0; i < 2; i++) fen[pos++] = pawn_ori_to_rep[c][ori][i];
           continue;
         }

@@ -149,6 +149,8 @@ typedef struct position {
 // Function prototypes
 // -----------------------------------------------------------------------------
 
+piece_t get_piece(position_t *p, square_t sq);
+void set_piece(position_t *p, square_t sq, piece_t new_piece);
 int check_position_integrity(position_t *p);
 int check_pawn_counts(position_t *p);
 char *color_to_str(color_t c);

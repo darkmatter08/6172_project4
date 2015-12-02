@@ -92,7 +92,7 @@ ev_score_t pbetween(position_t *p, fil_t f, rnk_t r) {
 // KFACE heuristic: bonus (or penalty) for King facing toward the other King
 ev_score_t kface(position_t *p, fil_t f, rnk_t r) {
   square_t sq = square_of(f, r);
-  piece_t x = p->board[sq];
+  piece_t x = get_piece(p, sq);
   color_t c = color_of(x);
   square_t opp_sq = p->kloc[opp_color(c)];
   int delta_fil = fil_of(opp_sq) - f;
@@ -127,7 +127,7 @@ ev_score_t kface(position_t *p, fil_t f, rnk_t r) {
 
 // KFACE heuristic: bonus (or penalty) for King facing toward the other King
 ev_score_t kface_opt(position_t *p, square_t k, int delta_fil, int delta_rnk) {
-  piece_t x = p->board[k];
+  piece_t x = get_piece(p, k);
   int bonus;
 
   switch (ori_of(x)) {
@@ -209,10 +209,10 @@ void mark_laser_path(position_t *p, char *laser_map, color_t c,
 
   // Fire laser, recording in laser_map
   square_t sq = np.kloc[c];
-  int bdir = ori_of(np.board[sq]);
+  int bdir = ori_of(get_piece(&np, sq));
 
-  tbassert(ptype_of(np.board[sq]) == KING,
-           "ptype: %d\n", ptype_of(np.board[sq]));
+  tbassert(ptype_of(get_piece(&np, sq)) == KING,
+           "ptype: %d\n", ptype_of(get_piece(&np, sq)));
   laser_map[sq] |= mark_mask;
 
   while (true) {
@@ -220,11 +220,11 @@ void mark_laser_path(position_t *p, char *laser_map, color_t c,
     laser_map[sq] |= mark_mask;
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
-    switch (ptype_of(p->board[sq])) {
+    switch (ptype_of(get_piece(p, sq))) {
       case EMPTY:  // empty square
         break;
       case PAWN:  // Pawn
-        bdir = reflect_of(bdir, ori_of(p->board[sq]));
+        bdir = reflect_of(bdir, ori_of(get_piece(p, sq)));
         if (bdir < 0) {  // Hit back of Pawn
           return;
         }
@@ -256,7 +256,7 @@ int pawnpin(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE
       continue;
     }
     if (opposite_color_laser_map[sq] == 0 &&
-        color_of(p->board[sq]) == color) {
+        color_of(get_piece(p, sq)) == color) {
       pinned_pawns += 1;
     }
   }
@@ -268,10 +268,10 @@ int pawnpin(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE
 int mobility(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE]) {
   int mobility = 0;
   square_t king_sq = p->kloc[color];
-  tbassert(ptype_of(p->board[king_sq]) == KING,
-           "ptype: %d\n", ptype_of(p->board[king_sq]));
-  tbassert(color_of(p->board[king_sq]) == color,
-           "color: %d\n", color_of(p->board[king_sq]));
+  tbassert(ptype_of(get_piece(p, sq)) == KING,
+           "ptype: %d\n", ptype_of(get_piece(p, sq)));
+  tbassert(color_of(get_piece(p, sq)) == color,
+           "color: %d\n", color_of(get_piece(p, sq)));
 
   if (opposite_color_laser_map[king_sq] == 0) {
     mobility++;
@@ -308,10 +308,10 @@ float h_dist(rnk_t ra, fil_t fa, square_t b) {
 // H_SQUARES_ATTACKABLE heuristic: for shooting the enemy king
 int h_squares_attackable(position_t *p, color_t c, char laser_map[ARR_SIZE]) {
   square_t o_king_sq = p->kloc[opp_color(c)];
-  tbassert(ptype_of(p->board[o_king_sq]) == KING,
-           "ptype: %d\n", ptype_of(p->board[o_king_sq]));
-  tbassert(color_of(p->board[o_king_sq]) != c,
-           "color: %d\n", color_of(p->board[o_king_sq]));
+  tbassert(ptype_of(get_piece(p, o_king_sq)) == KING,
+           "ptype: %d\n", ptype_of(get_piece(p, o_king_sq)));
+  tbassert(color_of(get_piece(p, o_king_sq)) != c,
+           "color: %d\n", color_of(get_piece(p, o_king_sq)));
 
   float h_attackable = 0;
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
@@ -332,7 +332,7 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
 
   // Fire laser, recording in laser_map
   square_t sq = np.kloc[c];
-  int bdir = ori_of(np.board[sq]);
+  int bdir = ori_of(get_piece(&np, sq));
   int beam = beam_of(bdir);
   h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
 
@@ -340,12 +340,12 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
     sq += beam;
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
-    switch (ptype_of(p->board[sq])) {
+    switch (ptype_of(get_piece(p, sq))) {
       case EMPTY:  // empty square
         h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
         break;
       case PAWN:  // Pawn
-        bdir = reflect_of(bdir, ori_of(p->board[sq]));
+        bdir = reflect_of(bdir, ori_of(get_piece(p, sq)));
         h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
         if (bdir < 0) {  // Hit back of Pawn
           return h_attackable;
@@ -384,7 +384,7 @@ score_t eval(position_t *p, bool verbose) {
     if (sq == 0) {
       continue;
     }
-    piece_t x = p->board[sq];
+    piece_t x = get_piece(p, sq);
     color_t c = color_of(x);
     bonus = PAWN_EV_VALUE;
     if (verbose) {
