@@ -94,11 +94,15 @@ static score_t scout_search(searchNode *node, int depth,
   cilk_for (int mv_index = 0; mv_index < num_of_moves; mv_index++) {
     do {
       if (node->abort) continue;
+      int local_index;
+      
+      simple_acquire(&node_mutex);
       // Sort up to number_of_moves_evaluated
       sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
+      local_index = number_of_moves_evaluated++;
+      simple_release(&node_mutex);
 
       // Get the next move from the move list.
-      int local_index = number_of_moves_evaluated++;
       move_t mv = get_move(move_list[local_index]);
 
       if (TRACE_MOVES) {
@@ -120,7 +124,7 @@ static score_t scout_search(searchNode *node, int depth,
       // A legal move is a move that's not KO, but when we are in quiescence
       // we only want to count moves that has a capture.
       if (result.type == MOVE_EVALUATED) {
-        node->legal_move_count++;
+        __sync_fetch_and_add(&node->legal_move_count, 1);
       }
       simple_acquire(&node_mutex);
       // process the score. Note that this mutates fields in node.
@@ -128,7 +132,7 @@ static score_t scout_search(searchNode *node, int depth,
       simple_release(&node_mutex);
       if (cutoff) {
         node->abort = true;
-        break;
+        continue;
       }
     } while (false);
   }
