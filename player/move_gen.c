@@ -466,6 +466,24 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   return move_count;
 }
 
+void swap_positions(position_t *old, position_t *p) {
+  p->ply = old->ply;
+  p->key = old->key;
+
+  p->victims.stomped = old->victims.stomped;
+  p->victims.zapped = old->victims.zapped;
+
+  for (int i = 0; i < ARR_SIZE; i++) {
+    p->board[i] = old->board[i];
+  }
+  for (int i = 0; i < 2; i++) {
+    p->kloc[i] = old->kloc[i];
+  }
+  for (int i = 0; i < NUM_PAWNS; i++) {
+    p->ploc[i] = old->ploc[i];
+  }
+}
+
 square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
   tbassert(mv != 0, "mv was zero.\n");
 
@@ -515,7 +533,7 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
       }
     });
 
-  *p = *old;
+  swap_positions(old, p);
 
   p->history = old;
   p->last_move = mv;
