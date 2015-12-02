@@ -41,20 +41,20 @@ struct ttHashtable {
 
 
 // getting the move out of the record
-move_t tt_move_of(ttRec_t *rec) {
+move_t inline tt_move_of(ttRec_t *rec) {
   return rec->move;
 }
 
 // getting the score out of the record
-score_t tt_score_of(ttRec_t *rec) {
+score_t inline tt_score_of(ttRec_t *rec) {
   return rec->score;
 }
 
-size_t tt_get_bytes_per_record() {
+size_t inline tt_get_bytes_per_record() {
   return sizeof(struct ttRec);
 }
 
-uint32_t tt_get_num_of_records() {
+uint32_t inline tt_get_num_of_records() {
   return hashtable.num_of_sets * RECORDS_PER_SET;
 }
 
@@ -84,22 +84,22 @@ void tt_resize_hashtable(int size_in_meg) {
   memset(hashtable.tt_set, 0, sizeof(ttSet_t) * hashtable.num_of_sets);
 }
 
-void tt_make_hashtable(int size_in_meg) {
+void inline tt_make_hashtable(int size_in_meg) {
   hashtable.tt_set = NULL;
   tt_resize_hashtable(size_in_meg);
 }
 
-void tt_free_hashtable() {
+void inline tt_free_hashtable() {
   free(hashtable.tt_set);
   hashtable.tt_set = NULL;
 }
 
 // age the hash table by incrementing global age
-void tt_age_hashtable() {
+void inline tt_age_hashtable() {
   hashtable.age++;
 }
 
-void tt_clear_hashtable() {
+void inline tt_clear_hashtable() {
   memset(hashtable.tt_set, 0, sizeof(ttSet_t) * hashtable.num_of_sets);
   hashtable.age = 0;
 }
@@ -158,7 +158,7 @@ void tt_hashtable_put(uint64_t key, int depth, score_t score,
 }
 
 
-ttRec_t *tt_hashtable_get(uint64_t key) {
+inline ttRec_t * tt_hashtable_get(uint64_t key) {
   if (!USE_TT) {
     return NULL;  // done if we are not using the transposition table
   }
@@ -177,11 +177,11 @@ ttRec_t *tt_hashtable_get(uint64_t key) {
 }
 
 
-score_t win_in(int ply)  {
+score_t inline win_in(int ply)  {
   return  WIN - ply;
 }
 
-score_t lose_in(int ply) {
+score_t inline lose_in(int ply) {
   return -WIN + ply;
 }
 
@@ -189,7 +189,7 @@ score_t lose_in(int ply) {
 // pure score that does not account for which ply you are in the search tree;
 // when you retrieve the score from the hashtable, however, you want to
 // consider the value of the position based on where you are in the search tree
-score_t tt_adjust_score_from_hashtable(ttRec_t *rec, int ply_in_search) {
+score_t inline tt_adjust_score_from_hashtable(ttRec_t *rec, int ply_in_search) {
   score_t score = rec->score;
   if (score >= win_in(MAX_PLY_IN_SEARCH)) {
     return score - ply_in_search;
@@ -201,7 +201,7 @@ score_t tt_adjust_score_from_hashtable(ttRec_t *rec, int ply_in_search) {
 }
 
 // the inverse of tt_adjust_score_for_hashtable
-score_t tt_adjust_score_for_hashtable(score_t score, int ply_in_search) {
+score_t inline tt_adjust_score_for_hashtable(score_t score, int ply_in_search) {
   if (score >= win_in(MAX_PLY_IN_SEARCH)) {
     return score + ply_in_search;
   }
@@ -213,7 +213,7 @@ score_t tt_adjust_score_for_hashtable(score_t score, int ply_in_search) {
 
 
 // Whether we can use this record or not
-bool tt_is_usable(ttRec_t *tt, int depth, score_t beta) {
+bool inline tt_is_usable(ttRec_t *tt, int depth, score_t beta) {
   // can't use this record if we are searching at depth higher than the
   // depth of this record.
   if (tt->quality < depth) {

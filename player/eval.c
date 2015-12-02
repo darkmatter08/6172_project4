@@ -36,7 +36,7 @@ float h_dist_lookup[BOARD_WIDTH][BOARD_WIDTH][ARR_SIZE];
 ev_score_t pcentral_lookup[BOARD_WIDTH][BOARD_WIDTH];
 
 
-ev_score_t pcentral_calc(fil_t f, rnk_t r) {
+ev_score_t inline pcentral_calc(fil_t f, rnk_t r) {
   double df = BOARD_WIDTH/2 - f - 1;
   if (df < 0)  df = f - BOARD_WIDTH/2;
   double dr = BOARD_WIDTH/2 - r - 1;
@@ -69,19 +69,19 @@ void init_eval() {
 }
 
 // PCENTRAL heuristic: Bonus for Pawn near center of board
-ev_score_t pcentral(fil_t f, rnk_t r) {
+ev_score_t inline pcentral(fil_t f, rnk_t r) {
   tbassert(pcentral_lookup[f][r] == pcentral_calc(f, r), "foo");
   return pcentral_lookup[f][r];
 }
 
 // returns true if c lies on or between a and b, which are not ordered
-bool between(int c, int a, int b) {
+bool inline between(int c, int a, int b) {
   bool x = ((c >= a) && (c <= b)) || ((c <= a) && (c >= b));
   return x;
 }
 
 // PBETWEEN heuristic: Bonus for Pawn at (f, r) in rectangle defined by Kings at the corners
-ev_score_t pbetween(position_t *p, fil_t f, rnk_t r) {
+ev_score_t inline pbetween(position_t *p, fil_t f, rnk_t r) {
   bool is_between =
       between(f, fil_of(p->kloc[WHITE]), fil_of(p->kloc[BLACK])) &&
       between(r, rnk_of(p->kloc[WHITE]), rnk_of(p->kloc[BLACK]));
@@ -90,7 +90,7 @@ ev_score_t pbetween(position_t *p, fil_t f, rnk_t r) {
 
 
 // KFACE heuristic: bonus (or penalty) for King facing toward the other King
-ev_score_t kface(position_t *p, fil_t f, rnk_t r) {
+ev_score_t inline kface(position_t *p, fil_t f, rnk_t r) {
   square_t sq = square_of(f, r);
   piece_t x = p->board[sq];
   color_t c = color_of(x);
@@ -126,7 +126,7 @@ ev_score_t kface(position_t *p, fil_t f, rnk_t r) {
 
 
 // KFACE heuristic: bonus (or penalty) for King facing toward the other King
-ev_score_t kface_opt(position_t *p, square_t k, int delta_fil, int delta_rnk) {
+ev_score_t inline kface_opt(position_t *p, square_t k, int delta_fil, int delta_rnk) {
   piece_t x = p->board[k];
   int bonus;
 
@@ -156,7 +156,7 @@ ev_score_t kface_opt(position_t *p, square_t k, int delta_fil, int delta_rnk) {
 }
 
 // KAGGRESSIVE heuristic: bonus for King with more space to back
-ev_score_t kaggressive(position_t *p, fil_t f, rnk_t r, square_t sq, color_t c) {
+ev_score_t inline kaggressive(position_t *p, fil_t f, rnk_t r, square_t sq, color_t c) {
   square_t opp_sq = p->kloc[opp_color(c)];
   fil_t of = fil_of(opp_sq);
   rnk_t _or = (rnk_t) rnk_of(opp_sq);
@@ -180,7 +180,7 @@ ev_score_t kaggressive(position_t *p, fil_t f, rnk_t r, square_t sq, color_t c) 
 }
 
 // KAGGRESSIVE heuristic: bonus for King with more space to back
-ev_score_t kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int delta_rnk) {
+ev_score_t inline kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int delta_rnk) {
   int bonus = 0;
 
   if (delta_fil >= 0 && delta_rnk >= 0) {
@@ -203,7 +203,7 @@ ev_score_t kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int d
 //             path of the laser is marked with mark_mask
 // c : color of king shooting laser
 // mark_mask: what each square is marked with
-void mark_laser_path(position_t *p, char *laser_map, color_t c,
+void inline mark_laser_path(position_t *p, char *laser_map, color_t c,
                      char mark_mask) {
   position_t np = *p;
 
@@ -245,7 +245,7 @@ void mark_laser_path(position_t *p, char *laser_map, color_t c,
 // PAWNPIN Heuristic: count number of pawns that are pinned by the
 //   opposing king's laser --- and are thus immobile.
 
-int pawnpin(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE]) {
+int inline pawnpin(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE]) {
   int pinned_pawns = 0;
 
   // Figure out which pawns are not pinned down by the laser.
@@ -265,7 +265,7 @@ int pawnpin(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE
 }
 
 // MOBILITY heuristic: safe squares around king of color color.
-int mobility(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE]) {
+int inline mobility(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE]) {
   int mobility = 0;
   square_t king_sq = p->kloc[color];
   tbassert(ptype_of(p->board[king_sq]) == KING,
@@ -286,7 +286,7 @@ int mobility(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZ
 }
 
 // MOBILITY heuristic: safe squares around king of color color.
-int mobility_opt(position_t *p, square_t king_sq, char opposite_color_laser_map[ARR_SIZE]) {
+int inline mobility_opt(position_t *p, square_t king_sq, char opposite_color_laser_map[ARR_SIZE]) {
   int mobility = 0;
   if (opposite_color_laser_map[king_sq] == 0) {
     mobility++;
@@ -301,12 +301,12 @@ int mobility_opt(position_t *p, square_t king_sq, char opposite_color_laser_map[
 }
 
 // Harmonic-ish distance: 1/(|dx|+1) + 1/(|dy|+1)
-float h_dist(rnk_t ra, fil_t fa, square_t b) {
+float inline h_dist(rnk_t ra, fil_t fa, square_t b) {
   return h_dist_lookup[ra][fa][b];
 }
 
 // H_SQUARES_ATTACKABLE heuristic: for shooting the enemy king
-int h_squares_attackable(position_t *p, color_t c, char laser_map[ARR_SIZE]) {
+int inline h_squares_attackable(position_t *p, color_t c, char laser_map[ARR_SIZE]) {
   square_t o_king_sq = p->kloc[opp_color(c)];
   tbassert(ptype_of(p->board[o_king_sq]) == KING,
            "ptype: %d\n", ptype_of(p->board[o_king_sq]));
@@ -326,7 +326,7 @@ int h_squares_attackable(position_t *p, color_t c, char laser_map[ARR_SIZE]) {
 }
 
 // H_SQUARES_ATTACKABLE heuristic: for shooting the enemy king
-int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
+int inline h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
   float h_attackable = 0;
   position_t np = *p;
 
@@ -367,7 +367,7 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
 }
 
 // Static evaluation.  Returns score
-score_t eval(position_t *p, bool verbose) {
+score_t inline eval(position_t *p, bool verbose) {
   tbassert(check_position_integrity(p), "pawn positions incorrect");
   tbassert(check_pawn_counts(p), "pawn counts are off");
   // seed rand_r with a value of 1, as per
