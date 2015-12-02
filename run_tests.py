@@ -32,7 +32,7 @@ class bcolors:
 MISMATCH_STR = bcolors.FAIL + ' < MISMATCH' + bcolors.ENDC
 
 # Location of Reference Impl
-REFERENCE_EXE = "./ref_player/leiserchess"
+REFERENCE_EXE = "./stable/leiserchess"
 
 ## Utilities
 

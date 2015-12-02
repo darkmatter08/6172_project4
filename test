@@ -8,5 +8,5 @@ then
 fi
 
 cd player/; make clean; make; cd ../;
-
+cd stable/; make clean; make; cd ../;
 ./run_tests.py player/leiserchess my_tests/ $aws
