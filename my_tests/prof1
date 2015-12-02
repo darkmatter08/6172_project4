@@ -1,5 +1,3 @@
-go depth 4
-go depth 6
 position fen 6SS3/1sw5NW2/6SE1SE1/4sw2NE2/3SW1SW1sw2/2ee6NW/2nw1nw5/6nw1se1/10/10 B
 go depth 4
 position fen NW2NN1nn1NW1nw/SW6ne2/2SW7/NW1NW1sw5/10/1se4SEsese1/sw9/10/10/10 W
