@@ -35,10 +35,13 @@ int check_position_integrity(position_t *p) {
     for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       if (ptype_of(p->board[sq]) == PAWN) {
         int pawn_found = 0;
-        for (int i = 0; i < NUM_PAWNS; i++) {
-          if (p->ploc[i] == sq) {
-            pawn_found = 1;
-            break;
+        for (int color = WHITE; color < 2; color++) {
+          for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+            if (p->ploc[color][i] == sq) {
+              pawn_found = 1;
+              color = 2; // Needed to break out of outer loop
+              break;
+            }
           }
         }
         if (pawn_found == 0) {
@@ -62,9 +65,11 @@ int check_pawn_counts(position_t *p) {
     }
   }
   int ploc_count = 0;
-  for (int i = 0; i < NUM_PAWNS; i++) {
-    if (p->ploc[i] != 0) {
-      ploc_count++;
+  for (int color = WHITE; color < 2; color++) {
+    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+      if (p->ploc[color][i] != 0) {
+        ploc_count++;
+      }
     }
   }
   if (ploc_count == live_pawn_count) {
@@ -337,11 +342,12 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
 
   square_t k = p->kloc[color_to_move];
   move_count = generate_king_moves(p, k, sortable_move_list, move_count);
-  for (int i = 0; i < NUM_PAWNS; i++) {
-    square_t pawn = p->ploc[i];
-    piece_t x = p->board[pawn];
-    if (pawn != 0 && color_of(x) == color_to_move) {
-      move_count = generate_pawn_moves(p, pawn, color_to_move, sortable_move_list, move_count, laser_map);
+  for (int color = WHITE; color < 2; color++) {
+    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+      square_t pawn = p->ploc[color][i];
+      if (pawn != 0 && color == color_to_move) {
+        move_count = generate_pawn_moves(p, pawn, color_to_move, sortable_move_list, move_count, laser_map);
+      }
     }
   }
 
@@ -361,8 +367,10 @@ void swap_positions(position_t * restrict old, position_t * restrict p) {
   for (int i = 0; i < 2; i++) {
     p->kloc[i] = old->kloc[i];
   }
-  for (int i = 0; i < NUM_PAWNS; i++) {
-    p->ploc[i] = old->ploc[i];
+  for (int color = WHITE; color < 2; color++) {
+    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+      p->ploc[color][i] = old->ploc[color][i];
+    }
   }
 }
 
@@ -456,10 +464,13 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
       // board.
       stomped_dst_sq = from_sq;
     } else if (PAWN == from_type && EMPTY == to_type){
-      for (int i = 0; i < NUM_PAWNS; i++) {
-        if (from_sq == p->ploc[i]) {
-          p->ploc[i] = to_sq;
-          break;
+      for (int color = WHITE; color < 2; color++) {
+        for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+          if (from_sq == p->ploc[color][i]) {
+            p->ploc[color][i] = to_sq;
+            color = 2; // Needed to break out of outer loop
+            break;
+          }
         }
       }
     }
@@ -566,10 +577,13 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
 
     p->key ^= zob[stomped_sq][p->victims.stomped];   // remove from board
     p->board[stomped_sq] = 0;
-    for (int i = 0; i < NUM_PAWNS; i++) {
-      if (stomped_sq == p->ploc[i]) {
-        p->ploc[i] = 0;
-        break;
+    for (int color = WHITE; color < 2; color++) {
+      for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+        if (stomped_sq == p->ploc[color][i]) {
+          p->ploc[color][i] = 0;
+          color = 2; // Needed to break
+          break;
+        }
       }
     }
     p->key ^= zob[stomped_sq][p->board[stomped_sq]];
@@ -606,10 +620,13 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->victims.zapped = p->board[victim_sq];
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     p->board[victim_sq] = 0;
-    for (int i = 0; i < NUM_PAWNS; i++) {
-      if (victim_sq == p->ploc[i]) {
-        p->ploc[i] = 0;
-        break;
+    for (int color = WHITE; color < 2; color++) {
+      for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+        if (victim_sq == p->ploc[color][i]) {
+          p->ploc[color][i] = 0;
+          color = 2; // Needed to break
+          break;
+        }
       }
     }
     p->key ^= zob[victim_sq][0];
@@ -652,10 +669,13 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
     move_t mv = get_move(lst[i]);
 
     square_t stomped_sq = low_level_make_move(p, &np, mv);  // make the move baby!
-    for (int i = 0; i < NUM_PAWNS; i++) {
-      if (stomped_sq == p->ploc[i]) {
-        p->ploc[i] = 0;
-        break;
+    for (int color = WHITE; color < 2; color++) {
+      for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+        if (stomped_sq == p->ploc[color][i]) {
+          p->ploc[color][i] = 0;
+          color = 2; // Needed to break
+          break;
+        }
       }
     }
 
@@ -681,12 +701,16 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
       }
       np.victims.zapped = np.board[victim_sq];
       np.key ^= zob[victim_sq][np.victims.zapped];   // remove from board
-      for (int i = 0; i < NUM_PAWNS; i++) {
-        if (victim_sq == np.ploc[i]) {
-          np.ploc[i] = 0;
-          break;
+      for (int color = WHITE; color < 2; color++) {
+        for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+          if (victim_sq == np.ploc[color][i]) {
+            np.ploc[color][i] = 0;
+            color = 2; // Needed to break
+            break;
+          }
         }
       }
+
       np.board[victim_sq] = 0;
       np.key ^= zob[victim_sq][0];
     }

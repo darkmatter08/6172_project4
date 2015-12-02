@@ -35,6 +35,8 @@ typedef int8_t fil_t;
 #define RNK_SHIFT 0
 #define RNK_MASK 15
 #define NUM_PAWNS 14
+#define HALF_NUM_PAWNS NUM_PAWNS/2
+
 // -----------------------------------------------------------------------------
 // pieces
 // -----------------------------------------------------------------------------
@@ -143,7 +145,7 @@ typedef struct position {
   move_t       last_move;        // move that led to this position
   victims_t    victims;          // pieces destroyed by shooter or stomper
   square_t     kloc[2];          // location of kings
-  square_t     ploc[NUM_PAWNS];
+  square_t     ploc[2][HALF_NUM_PAWNS];
 } position_t;
 
 static inline color_t color_to_move_of(position_t *p) {
