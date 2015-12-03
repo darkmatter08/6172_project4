@@ -581,12 +581,15 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
       // board.
       stomped_dst_sq = from_sq;
     } else if (PAWN == from_type && EMPTY == to_type){
+      bool move_plist = false;
       for (int i = 0; i < HALF_NUM_PAWNS; i++) {
         if (from_sq == p->ploc[from_color][i]) {
           p->ploc[from_color][i] = to_sq;
+          move_plist = true;
           break;
         }
       }
+      tbassert(move_plist, "Should find a piece in the ploc that moved\n");
     }
 
     // Hash key updates
@@ -697,12 +700,15 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->key ^= zob[stomped_sq][p->victims.stomped];   // remove from board
     color_t color = color_of(p->board[stomped_sq]);
     p->board[stomped_sq] = 0;
+    bool stomp_plist = false;
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
-      if (stomped_sq == p->ploc[color][i]) {
-        p->ploc[color][i] = 0;
+      if (stomped_sq == p->ploc[1-color][i]) {
+        p->ploc[1-color][i] = 0;
+        stomp_plist = true;
         break;
       }
     }
+    tbassert(stomp_plist, "Should find a piece in the ploc that is stomped\n");
     p->key ^= zob[stomped_sq][p->board[stomped_sq]];
 
     tbassert(p->key == compute_zob_key(p),
@@ -738,12 +744,15 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     color_t color = color_of(p->board[victim_sq]);
     p->board[victim_sq] = 0;
+    bool shot_plist = false;
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
       if (victim_sq == p->ploc[color][i]) {
         p->ploc[color][i] = 0;
+        shot_plist = true;
         break;
       }
     }
+    tbassert(shot_plist, "Should find a piece in the ploc that is shot\n");
     p->key ^= zob[victim_sq][0];
 
     tbassert(p->key == compute_zob_key(p),
@@ -785,12 +794,15 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
 
     square_t stomped_sq = low_level_make_move(p, &np, mv);  // make the move baby!
     color_t color = color_of(p->board[stomped_sq]);
+    bool stomp_plist = false;
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
-      if (stomped_sq == p->ploc[color][i]) {
-        p->ploc[color][i] = 0;
+      if (stomped_sq == p->ploc[1-color][i]) {
+        p->ploc[1-color][i] = 0;
+        stomp_plist = true;
         break;
       }
     }
+    tbassert(stomp_plist, "Should find a piece in the ploc that is stomped in perft_search\n");
 
     if (stomped_sq != 0) {
       tbassert(ptype_of(np.board[stomped_sq]) == PAWN,
