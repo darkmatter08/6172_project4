@@ -333,11 +333,10 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
   // Fire laser, recording in laser_map
   square_t sq = np.kloc[c];
   int bdir = ori_of(np.board[sq]);
-  int beam = beam_of(bdir);
   h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
 
   while (true) {
-    sq += beam;
+    sq += beam_of(bdir);
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
     switch (ptype_of(p->board[sq])) {
@@ -350,7 +349,6 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
         if (bdir < 0) {  // Hit back of Pawn
           return h_attackable;
         }
-        beam = beam_of(bdir);
         break;
       case KING:  // King
         h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
@@ -442,8 +440,6 @@ score_t eval(position_t *p, bool verbose) {
 
   score[WHITE] += HATTACK * h_squares_attackable_opt(p, bk, WHITE);
   score[BLACK] += HATTACK * h_squares_attackable_opt(p, wk, BLACK);
-  tbassert(h_squares_attackable(p, WHITE, laser_map_white) == h_squares_attackable_opt(p, bk, WHITE), "h_squares_attackable does not match white\n");
-  tbassert(h_squares_attackable(p, BLACK, laser_map_black) == h_squares_attackable_opt(p, wk, BLACK), "h_squares_attackable does not match black\n");
 
   score[WHITE] += MOBILITY * mobility_opt(p, wk, laser_map_black);
   score[BLACK] += MOBILITY * mobility_opt(p, bk, laser_map_white);
