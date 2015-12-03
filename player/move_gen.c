@@ -463,8 +463,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   for (int color = WHITE; color < 2; color++) {
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
       square_t pawn = p->ploc[color][i];
-      piece_t x = p->board[pawn];
-      if (pawn != 0 && color_of(x) == color_to_move) {
+      if (pawn != 0 && color == color_to_move) {
         move_count = generate_pawn_moves(p, pawn, color_to_move, sortable_move_list, move_count, laser_map);
       }
     }
