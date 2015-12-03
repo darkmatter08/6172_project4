@@ -442,8 +442,6 @@ score_t eval(position_t *p, bool verbose) {
 
   score[WHITE] += HATTACK * h_squares_attackable_opt(p, bk, WHITE);
   score[BLACK] += HATTACK * h_squares_attackable_opt(p, wk, BLACK);
-  tbassert(h_squares_attackable(p, WHITE, laser_map_white) == h_squares_attackable_opt(p, bk, WHITE), "h_squares_attackable does not match white\n");
-  tbassert(h_squares_attackable(p, BLACK, laser_map_black) == h_squares_attackable_opt(p, wk, BLACK), "h_squares_attackable does not match black\n");
 
   score[WHITE] += MOBILITY * mobility_opt(p, wk, laser_map_black);
   score[BLACK] += MOBILITY * mobility_opt(p, bk, laser_map_white);
