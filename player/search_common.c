@@ -278,10 +278,10 @@ void evaluateMove(searchNode *node, move_t mv, move_t killer_a,
   }
 
   // Check whether the board state has been repeated, this results in a draw.
-  if (is_repeated(&(result.next_node.position), node->ply)) {
-    result.type = MOVE_GAMEOVER;
-    result.score = get_draw_score(&(result.next_node.position), node->ply);
-    return result;
+  if (is_repeated(&(result->next_node.position), node->ply)) {
+    result->type = MOVE_GAMEOVER;
+    result->score = get_draw_score(&(result->next_node.position), node->ply);
+    return;
   }
 
   tbassert(victims.stomped == 0
