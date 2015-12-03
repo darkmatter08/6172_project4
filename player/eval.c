@@ -254,6 +254,7 @@ int pawnpin(position_t *p, color_t color, char opposite_color_laser_map[ARR_SIZE
     if (sq == 0) {
       continue;
     }
+    tbassert(color_of(p->board[sq]) == color, "Iterating through a color should all be the right ones\n");
     if (opposite_color_laser_map[sq] == 0) {
       pinned_pawns += 1;
     }
