@@ -56,11 +56,13 @@ int check_position_integrity(position_t *p) {
     for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       if (ptype_of(p->board[sq]) == PAWN) {
         int pawn_found = 0;
-        color_t color = color_of(p->board[sq]);
-        for (int i = 0; i < HALF_NUM_PAWNS; i++) {
-          if (p->ploc[color][i] == sq) {
-            pawn_found = 1;
-            break;
+        for (int color = WHITE; color < 2; color++) {
+          for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+            if (p->ploc[color][i] == sq) {
+              pawn_found = 1;
+              color = 2; // Needed to break out of outer loop
+              break;
+            }
           }
         }
         if (pawn_found == 0) {
