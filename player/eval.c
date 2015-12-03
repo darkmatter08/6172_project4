@@ -184,16 +184,14 @@ int pawnpin(position_t * restrict p, color_t color, char * restrict opposite_col
   int pinned_pawns = 0;
 
   // Figure out which pawns are not pinned down by the laser.
-  for (int color_i = WHITE; color_i < 2; color_i++) {
-    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
-      square_t sq = p->ploc[color_i][i];
-      if (sq == 0) {
-        continue;
-      }
-      if (opposite_color_laser_map[sq] == 0 &&
-          color_i == color) {
-        pinned_pawns += 1;
-      }
+  for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+    square_t sq = p->ploc[color][i];
+    if (sq == 0) {
+      continue;
+    }
+    tbassert(color_of(p->board[sq]) == color, "Iterating through a color should all be the right ones\n");
+    if (opposite_color_laser_map[sq] == 0) {
+      pinned_pawns += 1;
     }
   }
 
