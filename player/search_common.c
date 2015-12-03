@@ -292,7 +292,7 @@ moveEvaluationResult evaluateMove(searchNode *node, move_t mv, move_t killer_a,
     return result;
   }
 
-  tbassert(victims.stomped == 0
+  tbassert(REMOVE_SQ(victims.stomped) == 0
            || color_of(victims.stomped) != node->fake_color_to_move,
            "stomped = %d, color = %d, fake_color_to_move = %d\n",
            victims.stomped, color_of(victims.stomped),
@@ -443,6 +443,31 @@ static int get_sortable_move_list(searchNode *node, sortable_move_t * move_list,
                          int hash_table_move) {
   // number of moves in list
   int num_of_moves = generate_all_opt(&(node->position), move_list, false);
+  sortable_move_t old_moves[MAX_NUM_MOVES];
+  int old_num_of_moves = generate_all(&(node->position), old_moves, false);
+  if (old_num_of_moves != num_of_moves) {
+    for (int i = 0; i < NUM_PAWNS; i++) {
+      square_t pawn_sq = square_of(node->position.ploc[i]);
+      printf("r: %d, f: %d\n", rnk_of(pawn_sq), fil_of(pawn_sq));
+    }
+    printf("\n\n");
+    char fen[200];
+    pos_to_fen(&node->position, fen);
+    printf("%s\n", fen);
+    printf("%d\n", num_of_moves);
+    for (int i = 0; i < num_of_moves; i++) {
+      char mov[MAX_CHARS_IN_MOVE];
+      move_to_str(get_move(move_list[i]), mov, MAX_CHARS_IN_MOVE);
+      printf("%s\n", mov);
+    }
+    printf("%d\n", old_num_of_moves);
+    for (int i = 0; i < old_num_of_moves; i++) {
+      char mov[MAX_CHARS_IN_MOVE];
+      move_to_str(get_move(old_moves[i]), mov, MAX_CHARS_IN_MOVE);
+      printf("%s\n", mov);
+    }
+  }
+
   tbassert(num_of_moves == generate_all(&(node->position), move_list, false),
            "move counts do not match");
 
@@ -472,5 +497,3 @@ static int get_sortable_move_list(searchNode *node, sortable_move_t * move_list,
   }
   return num_of_moves;
 }
-
-

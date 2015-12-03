@@ -22,7 +22,7 @@
 // board is 8 x 8 or 10 x 10
 #define BOARD_WIDTH 10
 
-typedef int square_t;
+typedef uint8_t square_t;
 typedef int8_t rnk_t;
 typedef int8_t fil_t;
 
@@ -38,9 +38,11 @@ typedef int8_t fil_t;
 // pieces
 // -----------------------------------------------------------------------------
 
-#define PIECE_SIZE 5  // Number of bits in (ptype, color, orientation)
+#define PIECE_SIZE 13
+#define NO_SQ_PIECE_SIZE 5  // Number of bits in (ptype, color, orientation)
+#define NO_SQ_PIECE_MASK ((1l << NO_SQ_PIECE_SIZE) - 1)
 
-typedef int8_t piece_t;
+typedef int16_t piece_t;
 
 // -----------------------------------------------------------------------------
 // piece types
@@ -90,6 +92,9 @@ typedef enum {
   SW
 } pawn_ori_t;
 
+#define SQ_SHIFT 5
+#define SQ_MASK ((1l << 8) - 1)
+
 // -----------------------------------------------------------------------------
 // moves
 // -----------------------------------------------------------------------------
@@ -123,6 +128,10 @@ typedef struct victims_t {
   piece_t zapped;
 } victims_t;
 
+// used to compact the representation of piece_t to the old style, for zob hashing reasons
+// TODO (ehuppert): remove all calls to this and change the way zob hashing works
+#define REMOVE_SQ(piece) (((uint64_t)piece) & NO_SQ_PIECE_MASK)
+
 // returned by make move in illegal situation
 #define KO_STOMPED -1
 #define KO_ZAPPED -1
@@ -141,8 +150,8 @@ typedef struct position {
   int          ply;              // Even ply are White, odd are Black
   move_t       last_move;        // move that led to this position
   victims_t    victims;          // pieces destroyed by shooter or stomper
-  square_t     kloc[2];          // location of kings
-  square_t     ploc[NUM_PAWNS];
+  piece_t     kloc[2];          // location of kings
+  piece_t     ploc[NUM_PAWNS];
 } position_t;
 
 // -----------------------------------------------------------------------------
@@ -151,19 +160,25 @@ typedef struct position {
 
 piece_t get_piece(position_t *p, square_t sq);
 void set_piece(position_t *p, square_t sq, piece_t new_piece);
+piece_t piece_of(square_t sq, ptype_t type, color_t c, int ori);
+void add_new_piece(position_t *p, piece_t piece, ptype_t piece_type, color_t color);
+void append_pawn(position_t *p, piece_t pawn);
 int check_position_integrity(position_t *p);
 int check_pawn_counts(position_t *p);
+int check_piece_array_integrity(position_t *p);
 char *color_to_str(color_t c);
 color_t color_to_move_of(position_t *p);
 color_t color_of(piece_t x);
+square_t square_of(piece_t x);
 color_t opp_color(color_t c);
 void set_color(piece_t *x, color_t c);
+void set_square(piece_t *x, square_t sq);
 ptype_t ptype_of(piece_t x);
 void set_ptype(piece_t *x, ptype_t pt);
 int ori_of(piece_t x);
 void set_ori(piece_t *x, int ori);
 void init_zob();
-square_t square_of(fil_t f, rnk_t r);
+square_t square_at(fil_t f, rnk_t r);
 fil_t fil_of(square_t sq);
 rnk_t rnk_of(square_t sq);
 int square_to_str(square_t sq, char *buf, size_t bufsize);
