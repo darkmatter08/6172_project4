@@ -92,7 +92,7 @@ static score_t scout_search(searchNode *node, int depth,
   simple_mutex_t node_mutex;
   init_simple_mutex(&node_mutex);
  
-/*  int bound = BEST_MOVE_HEADER < num_of_moves ? BEST_MOVE_HEADER : num_of_moves;
+  int bound = BEST_MOVE_HEADER < num_of_moves ? BEST_MOVE_HEADER : num_of_moves;
   for (int mv_index = 0; mv_index < bound; mv_index++) {
     // Sort up to number_of_moves_evaluated
     sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
@@ -129,9 +129,9 @@ static score_t scout_search(searchNode *node, int depth,
       break;
     }
   }
-*/
-  //if (!node->abort) {
-    cilk_for (int mv_index = 0; mv_index < num_of_moves; mv_index++) {
+
+  if (!node->abort) {
+    cilk_for (int mv_index = BEST_MOVE_HEADER; mv_index < num_of_moves; mv_index++) {
       do {
         if (node->abort) continue;
         
@@ -139,7 +139,7 @@ static score_t scout_search(searchNode *node, int depth,
         // Sort up to number_of_moves_evaluated
         sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
         int local_index = number_of_moves_evaluated++;
-        //simple_release(&node_mutex);
+        simple_release(&node_mutex);
 
         // Get the next move from the move list.
         move_t mv = get_move(move_list[local_index]);
@@ -165,7 +165,7 @@ static score_t scout_search(searchNode *node, int depth,
         if (result.type == MOVE_EVALUATED) {
           __sync_fetch_and_add(&node->legal_move_count, 1);
         }
-        //simple_acquire(&node_mutex);
+        simple_acquire(&node_mutex);
         // process the score. Note that this mutates fields in node.
         bool cutoff = search_process_score(node, mv, local_index, &result, SEARCH_SCOUT);
         simple_release(&node_mutex);
@@ -175,7 +175,7 @@ static score_t scout_search(searchNode *node, int depth,
         }
       } while (false);
     }
-  //}
+  }
 
   if (parallel_parent_aborted(node)) {
     return 0;

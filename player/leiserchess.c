@@ -399,7 +399,7 @@ void print_options() {
 // -----------------------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
-  //__cilkrts_set_param("nworkers", "1");
+  __cilkrts_set_param("nworkers", "1");
   position_t *gme = (position_t *) malloc(sizeof(position_t) * MAX_PLY_IN_GAME);
 
 
