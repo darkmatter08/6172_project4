@@ -107,9 +107,8 @@ static score_t get_draw_score(position_t *p, int ply) {
 
 // Detect move repetition
 static bool is_repeated(position_t *p, int ply) {
-  score_t score = 0;
   if (!DETECT_DRAWS) {
-    return score;  // no draw detected
+    return false;  // no draw detected
   }
 
   position_t *x = p->history;
@@ -124,17 +123,11 @@ static bool is_repeated(position_t *p, int ply) {
       break;  // cannot be a repetition
     }
     if (x->key == cur) {  // is a repetition
-      if (ply & 1) {
-        score = -DRAW;
-      } else {
-       score = DRAW;
-      }
-      return score;
+      return true;
     }
     x = x->history;
   }
-  //return false;
-  return score;
+  return false;
 }
 
 
@@ -285,10 +278,9 @@ moveEvaluationResult evaluateMove(searchNode *node, move_t mv, move_t killer_a,
   }
 
   // Check whether the board state has been repeated, this results in a draw.
-  score_t score = is_repeated(&(result.next_node.position), node->ply);
-  if (score != 0) {
+  if (is_repeated(&(result.next_node.position), node->ply)) {
     result.type = MOVE_GAMEOVER;
-    result.score = score;
+    result.score = get_draw_score(&(result.next_node.position), node->ply);
     return result;
   }
 
