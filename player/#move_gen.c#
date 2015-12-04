@@ -623,20 +623,21 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
   }
 
   square_t to_sq = to_square(mv);
-  square_t from_sq = from_square(mv);
+  square_t from_sq = to_square(mv);
   color_t color_to_move = color_to_move_of(p);
   color_t opp_color_to_move = opp_color(color_to_move);
 
   if (old->laser_map[opp_color_to_move][to_sq] != 0 ||
-      old->laser_map[opp_color_to_move][from_sq] != 0 ||
-      victim_sq > 0 ||
-      stomped_sq > 0 ||
-      rot_of(mv) != NONE ||
+      old->laser_map[color_to_move][from_sq] != 0 ||
       ptype_of(old->board[from_sq]) == KING) {
     mark_laser_path(p, opp_color_to_move);
   } else {
+    mark_laser_path(p, opp_color_to_move);
     for (int i = 0; i < ARR_SIZE; i++) {
-      p->laser_map[opp_color_to_move][i] = old->laser_map[opp_color_to_move][i];
+      if (p->laser_map[opp_color_to_move][i] != old->laser_map[opp_color_to_move][i]) {
+        char move_str[MAX_CHAR_IN_MOVE];
+        move_to_str(mv, move_str, MAX_CHAR_IN_MOVE);
+        printf("move: %s, piece type: %d", move_str, )
     }
   }
 

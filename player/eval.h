@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 #include "./search.h"
+#include "./move_gen.h"
 
 #define EV_SCORE_RATIO 100   // Ratio of ev_score_t values to score_t values
 

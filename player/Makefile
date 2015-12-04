@@ -18,7 +18,7 @@ ifeq ($(UNAME),Darwin)
 else
 	OS_TYPE := Linux
 	#PFLAG := -D_XOPEN_SOURCE
-	CFLAGS := -std=gnu99 -lrt -Wall -g3
+	CFLAGS := -std=gnu99 -lrt -Wall -g3 -fcilkplus
 	LDFLAGS= -Wall -lm -lrt -ldl -lpthread
 endif
 endif
