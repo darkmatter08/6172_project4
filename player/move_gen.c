@@ -361,7 +361,7 @@ void swap_positions(position_t * restrict old, position_t * restrict p) {
   }
 }
 
-square_t low_level_make_move(position_t * restrict old, position_t * restrict p, move_t mv) {
+inline square_t low_level_make_move(position_t * restrict old, position_t * restrict p, move_t mv) {
   tbassert(mv != 0, "mv was zero.\n");
 
   square_t stomped_dst_sq = 0;
