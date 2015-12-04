@@ -136,9 +136,7 @@ ev_score_t kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int d
 void mark_laser_path(position_t *p, color_t c) {
   char *laser_map = p->laser_map[c];
 
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map[i] = 4;   // Invalid square
-  }
+  tbassert(laser_map[0] == 4, "laser map not blank");
 
   for (int i = 0; i < BOARD_WIDTH; i++) {
     int k = (FIL_ORIGIN + i) * ARR_WIDTH + RNK_ORIGIN;

@@ -361,7 +361,7 @@ void swap_positions(position_t * restrict old, position_t * restrict p) {
   }
 }
 
-square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
+square_t low_level_make_move(position_t * restrict old, position_t * restrict p, move_t mv) {
   tbassert(mv != 0, "mv was zero.\n");
 
   square_t stomped_dst_sq = 0;
@@ -414,6 +414,10 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
 
   p->history = old;
   p->last_move = mv;
+  color_t c = color_to_move_of(old);
+  for (int i = 0; i < ARR_SIZE; i++) {
+    p->laser_map[c][i] = old->laser_map[c][i];
+  }
 
   tbassert(from_sq < ARR_SIZE && from_sq > 0, "from_sq: %d\n", from_sq);
   tbassert(p->board[from_sq] < (1 << PIECE_SIZE) && p->board[from_sq] >= 0,
@@ -633,10 +637,6 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
         victim_sq != 0 ||
         (ptype_of(old->board[from_sq]) == KING)) {
       mark_laser_path(p, opp_color_to_move);
-    } else {
-      for (int i = 0; i < ARR_SIZE; i++) {
-        p->laser_map[opp_color_to_move][i] = old->laser_map[opp_color_to_move][i];
-      }
     }
   }
 

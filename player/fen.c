@@ -389,8 +389,19 @@ int fen_to_pos(position_t *p, char *fen) {
     return 1;
   }
 
-  mark_laser_path(p, BLACK);
-  mark_laser_path(p, WHITE);
+  for (color_t c = 0; c < 2; c++) {
+    for (int i = 0; i < ARR_SIZE; ++i) {
+      p->laser_map[c][i] = 4;   // Invalid square
+    }
+
+    for (int i = 0; i < BOARD_WIDTH; i++) {
+      int k = (FIL_ORIGIN + i) * ARR_WIDTH + RNK_ORIGIN;
+      for (int j = 0; j < BOARD_WIDTH; j++, k++) {
+        p->laser_map[c][k] = 0;
+      }
+    }
+    mark_laser_path(p, c);
+  }
 
   char c;
   bool done = false;
