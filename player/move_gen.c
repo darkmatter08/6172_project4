@@ -631,11 +631,22 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
   color_t color_to_move = color_to_move_of(p);
   color_t opp_color_to_move = opp_color(color_to_move);
 
-  if (ptype_of(old->board[victim_sq]) != KING) {
+  if (ptype_of(old->board[victim_sq]) != KING &&
+      p->kloc[BLACK] != victim_sq &&
+      p->kloc[WHITE] != victim_sq) {
     if (old->laser_map[opp_color_to_move][to_sq] != 0 ||
         old->laser_map[opp_color_to_move][from_sq] != 0 ||
         victim_sq != 0 ||
         (ptype_of(old->board[from_sq]) == KING)) {
+      if (ptype_of(p->board[p->kloc[opp_color_to_move]]) != KING) {
+        char move_str[MAX_CHARS_IN_MOVE];
+        move_to_str(mv, move_str, MAX_CHARS_IN_MOVE);
+        char fen_old[200];
+        char fen_new[200];
+        pos_to_fen(p, fen_new);
+        pos_to_fen(old, fen_old);
+        tbassert(false, "kloc issue\n");
+      }
       mark_laser_path(p, opp_color_to_move);
     }
   }
