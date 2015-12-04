@@ -8,6 +8,8 @@
 #include "./tbassert.h"
 #include "./simple_mutex.h"
 
+#define BEST_MOVE_HEADER 5
+
 // Checks whether a node's parent has aborted.
 //   If this occurs, we should just stop and return 0 immediately.
 bool parallel_parent_aborted(searchNode* node) {
@@ -89,9 +91,9 @@ static score_t scout_search(searchNode *node, int depth,
   // A simple mutex. See simple_mutex.h for implementation details.
   simple_mutex_t node_mutex;
   init_simple_mutex(&node_mutex);
-
-
-  for (int mv_index = 0; mv_index < num_of_moves; mv_index++) {
+ 
+  int bound = BEST_MOVE_HEADER < num_of_moves ? BEST_MOVE_HEADER : num_of_moves;
+  for (int mv_index = 0; mv_index < bound; mv_index++) {
     // Sort up to number_of_moves_evaluated
     sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
 
@@ -121,13 +123,60 @@ static score_t scout_search(searchNode *node, int depth,
     if (result.type == MOVE_EVALUATED) {
       node->legal_move_count++;
     }
-
     // process the score. Note that this mutates fields in node.
     bool cutoff = search_process_score(node, mv, local_index, &result, SEARCH_SCOUT);
-
     if (cutoff) {
       node->abort = true;
       break;
+    }
+  }
+
+  if (!node->abort) {
+    cilk_for (int mv_index = BEST_MOVE_HEADER; mv_index < num_of_moves; mv_index++) {
+      do {
+        if (node->abort) continue;
+        
+        simple_acquire(&node_mutex);
+        // Sort up to number_of_moves_evaluated
+        sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
+        int local_index = number_of_moves_evaluated++;
+        simple_release(&node_mutex);
+
+        // Get the next move from the move list.
+        move_t mv = get_move(move_list[local_index]);
+
+        if (TRACE_MOVES) {
+          print_move_info(mv, node->ply);
+        }
+
+        // increase node count
+        __sync_fetch_and_add(node_count_serial, 1);
+
+        moveEvaluationResult result;
+        evaluateMove(node, mv, killer_a, killer_b,
+                     SEARCH_SCOUT,
+                     node_count_serial,
+                     &result);
+
+        if (result.type == MOVE_ILLEGAL || result.type == MOVE_IGNORE
+            || abortf || parallel_parent_aborted(node)) {
+          continue;
+        }
+
+        // A legal move is a move that's not KO, but when we are in quiescence
+        // we only want to count moves that has a capture.
+        if (result.type == MOVE_EVALUATED) {
+          __sync_fetch_and_add(&node->legal_move_count, 1);
+        }
+        simple_acquire(&node_mutex);
+        // process the score. Note that this mutates fields in node.
+        bool cutoff = search_process_score(node, mv, local_index, &result, SEARCH_SCOUT);
+        simple_release(&node_mutex);
+        if (cutoff) {
+          node->abort = true;
+          continue;
+        }
+      } while (false);
     }
   }
 

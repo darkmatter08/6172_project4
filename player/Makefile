@@ -23,6 +23,11 @@ else
 endif
 endif
 
+ifeq ($(TEST),1)
+  CFLAGS += -DTEST
+else
+endif
+
 #CFLAGS = -std=c99 -Wall -fcilkplus
 ifeq ($(DEBUG),1)
 	CFLAGS += -O0 -DDEBUG $(PFLAG)
