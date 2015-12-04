@@ -1,12 +1,11 @@
 #!/bin/bash
 
 #aws="--aws"
-export CILK_NWORKERS=1
 if [ $1 ]
 then
   ./gen_tests.py $1 my_tests/
 fi
 
-cd player/; make clean; make; cd ../;
+cd player/; make clean; make TEST=1; cd ../;
 #cd stable/; make clean; make; cd ../;
 ./run_tests.py player/leiserchess my_tests/ $aws
