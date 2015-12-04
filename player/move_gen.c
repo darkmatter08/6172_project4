@@ -217,7 +217,7 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
   }
 
   // 1 = path of laser with no moves
-  mark_laser_path(p, laser_map, opp_color(color_to_move), 1);
+  mark_laser_path(p, laser_map, opp_color(color_to_move));
 
   int move_count = 0;
 
@@ -353,7 +353,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   }
 
   // 1 = path of laser with no moves
-  mark_laser_path(p, laser_map, opp_color(color_to_move), 1);
+  mark_laser_path(p, laser_map, opp_color(color_to_move));
 
   int move_count = 0;
 

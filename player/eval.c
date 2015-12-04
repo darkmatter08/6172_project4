@@ -203,8 +203,7 @@ ev_score_t kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int d
 //             path of the laser is marked with mark_mask
 // c : color of king shooting laser
 // mark_mask: what each square is marked with
-void mark_laser_path(position_t *p, char *laser_map, color_t c,
-                     char mark_mask) {
+void mark_laser_path(position_t *p, char *laser_map, color_t c) {
 
   // Fire laser, recording in laser_map
   square_t sq = p->kloc[c];
@@ -212,11 +211,11 @@ void mark_laser_path(position_t *p, char *laser_map, color_t c,
 
   tbassert(ptype_of(p->board[sq]) == KING,
            "ptype: %d\n", ptype_of(p->board[sq]));
-  laser_map[sq] |= mark_mask;
+  laser_map[sq] |= 1;
 
   while (true) {
     sq += beam_of(bdir);
-    laser_map[sq] |= mark_mask;
+    laser_map[sq] |= 1;
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
     switch (ptype_of(p->board[sq])) {
@@ -434,8 +433,8 @@ score_t eval(position_t *p, bool verbose) {
     }
   }
 
-  mark_laser_path(p, laser_map_black, BLACK, 1);
-  mark_laser_path(p, laser_map_white, WHITE, 1);
+  mark_laser_path(p, laser_map_black, BLACK);
+  mark_laser_path(p, laser_map_white, WHITE);
 
   score[WHITE] += HATTACK * h_squares_attackable_opt(p, bk, WHITE);
   score[BLACK] += HATTACK * h_squares_attackable_opt(p, wk, BLACK);
