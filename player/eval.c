@@ -251,7 +251,6 @@ static inline void mark_laser_sq(position_t *p, square_t sq, color_t c) {
 // H_SQUARES_ATTACKABLE heuristic: for shooting the enemy king
 int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c, bool mark_laser_path) {
   float h_attackable = 0;
-  position_t np = *p;
 
   if (mark_laser_path) {
     for (int i = 0; i < ARR_SIZE; ++i) {
@@ -265,8 +264,8 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c, bool 
     }
   }
   // Fire laser, recording in laser_map
-  square_t sq = np.kloc[c];
-  int bdir = ori_of(np.board[sq]);
+  square_t sq = p->kloc[c];
+  int bdir = ori_of(p->board[sq]);
   h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
   if (mark_laser_path) {
     mark_laser_sq(p, sq, c);
