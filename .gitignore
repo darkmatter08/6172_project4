@@ -16,3 +16,4 @@ my_tests/prof_*
 gmon.out
 .DS_Store
 ._.DS_Store
+ref_result*

@@ -151,6 +151,8 @@ void mark_laser_path(position_t *p, color_t c) {
   square_t sq = p->kloc[c];
   int bdir = ori_of(p->board[sq]);
 
+  tbassert(ptype_of(p->board[sq]) == KING,
+           "ptype: %d\n", ptype_of(p->board[sq]));
   laser_map[sq] |= 1;
 
   while (true) {

@@ -343,7 +343,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   return move_count;
 }
 
-void swap_positions(position_t *old, position_t *p) {
+void swap_positions(position_t * restrict old, position_t * restrict p) {
   p->ply = old->ply;
   p->key = old->key;
 
@@ -627,16 +627,16 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
   color_t color_to_move = color_to_move_of(p);
   color_t opp_color_to_move = opp_color(color_to_move);
 
-  if (old->laser_map[opp_color_to_move][to_sq] != 0 ||
-      old->laser_map[opp_color_to_move][from_sq] != 0 ||
-      victim_sq > 0 ||
-      stomped_sq > 0 ||
-      rot_of(mv) != NONE ||
-      ptype_of(old->board[from_sq]) == KING) {
-    mark_laser_path(p, opp_color_to_move);
-  } else {
-    for (int i = 0; i < ARR_SIZE; i++) {
-      p->laser_map[opp_color_to_move][i] = old->laser_map[opp_color_to_move][i];
+  if (ptype_of(old->board[victim_sq]) != KING) {
+    if (old->laser_map[opp_color_to_move][to_sq] != 0 ||
+        old->laser_map[opp_color_to_move][from_sq] != 0 ||
+        victim_sq != 0 ||
+        (ptype_of(old->board[from_sq]) == KING)) {
+      mark_laser_path(p, opp_color_to_move);
+    } else {
+      for (int i = 0; i < ARR_SIZE; i++) {
+        p->laser_map[opp_color_to_move][i] = old->laser_map[opp_color_to_move][i];
+      }
     }
   }
 
