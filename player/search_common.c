@@ -370,9 +370,9 @@ void evaluateMove(searchNode *node, move_t mv, move_t killer_a,
 void sort_incremental(sortable_move_t *move_list, int num_of_moves, int mv_index) {
   // Return on the last one because it is already sorted and our for loop starts
   // at mv_index + 1
-  if (mv_index == num_of_moves - 1) {
-    return;
-  }
+  // if (mv_index == num_of_moves - 1) {
+  //   return;
+  // }
 
   // Find the index of the maximum element after mv_index
   sortable_move_t max = move_list[mv_index];
