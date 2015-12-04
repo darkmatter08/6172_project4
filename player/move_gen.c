@@ -580,6 +580,7 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
       // stomped piece.  Let the caller remove the piece from the
       // board.
       stomped_dst_sq = from_sq;
+      printf("STOMPPPPPPPPPPPPPPP ISSUE");
     } else if (PAWN == from_type && EMPTY == to_type){
       bool move_plist = false;
       for (int i = 0; i < HALF_NUM_PAWNS; i++) {
@@ -742,11 +743,18 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->victims.zapped = p->board[victim_sq];
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     color_t color = color_of(p->board[victim_sq]);
+    printf("victim_sq %i\n", victim_sq);
     p->board[victim_sq] = 0;
     bool shot_ploc = false;
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
       if (victim_sq == p->ploc[color][i]) {
         p->ploc[color][i] = 0;
+        shot_ploc = true;
+        break;
+      }
+    }
+    for (int i = 0; i < 2; i++) {
+      if (victim_sq == p->kloc[i]) {
         shot_ploc = true;
         break;
       }
