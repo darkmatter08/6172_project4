@@ -44,7 +44,8 @@ ev_score_t pcentral_calc(fil_t f, rnk_t r) {
 // setup lookup tables, etc
 void init_eval() {
   for (fil_t fa = 0; fa < BOARD_WIDTH; fa++) {
-    for (rnk_t ra = 0; ra < BOARD_WIDTH; ra++) {
+    square_t sq = (FIL_ORIGIN + fa) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t ra = 0; ra < BOARD_WIDTH; ra++, sq++) {
       pcentral_lookup[fa][ra] = pcentral_calc(fa, ra);
       for (fil_t fb = 0; fb < BOARD_WIDTH; fb++) {
         square_t b = (FIL_ORIGIN + fb) * ARR_WIDTH + RNK_ORIGIN;
@@ -52,7 +53,7 @@ void init_eval() {
           int delta_fil = abs(fa - fb);
           int delta_rnk = abs(ra - rb);
           float x = (1.0 / (delta_fil + 1)) + (1.0 / (delta_rnk + 1));
-          h_dist_lookup[fa][ra][b] = x;
+          h_dist_lookup[sq][b] = x;
         }
       }
     }
@@ -222,8 +223,8 @@ int mobility_opt(position_t *p, square_t king_sq, color_t opposite_color) {
 }
 
 // Harmonic-ish distance: 1/(|dx|+1) + 1/(|dy|+1)
-float h_dist(rnk_t ra, fil_t fa, square_t b) {
-  return h_dist_lookup[ra][fa][b];
+float h_dist(square_t sq, square_t b) {
+  return h_dist_lookup[sq][b];
 }
 
 static inline void mark_laser_sq(position_t *p, square_t sq, color_t c) {
@@ -262,17 +263,17 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c, bool 
 
     switch (ptype_of(p->board[sq])) {
       case EMPTY:  // empty square
-        h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
+        h_attackable += h_dist(sq, o_king_sq);
         break;
       case PAWN:  // Pawn
         bdir = reflect_of(bdir, ori_of(p->board[sq]));
-        h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
+        h_attackable += h_dist(sq, o_king_sq);
         if (bdir < 0) {  // Hit back of Pawn
           return h_attackable;
         }
         break;
       case KING:  // King
-        h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
+        h_attackable += h_dist(sq, o_king_sq);
         return h_attackable;
         break;
       case INVALID:  // Ran off edge of board
@@ -328,6 +329,7 @@ score_t eval(position_t *p, bool verbose) {
     score[c] += bonus;
   }
 
+  // grab values that are used in many heuristic functions. Saves work in other methods
   square_t wk = p->kloc[WHITE];
   fil_t wk_f = fil_of(wk);
   rnk_t wk_r = rnk_of(wk);

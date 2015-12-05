@@ -32,7 +32,7 @@ endif
 ifeq ($(DEBUG),1)
 	CFLAGS += -O0 -DDEBUG $(PFLAG)
 else
-	CFLAGS += -Ofast -fcilkplus -DNDEBUG $(PFLAG)
+	CFLAGS += -Ofast -DNDEBUG $(PFLAG)
 endif
 
 ifeq ($(REFERENCE),1)

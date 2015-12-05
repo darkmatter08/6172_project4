@@ -16,11 +16,11 @@
 #define MAX_CHARS_IN_MOVE 16  // Could be less
 #define MAX_CHARS_IN_TOKEN 64
 
-// the board (which is 8x8 or 10x10) is centered in a 16x16 array
+// the board (which is 10x10) is centered in a 12x12 array
 #define ARR_WIDTH 12
 #define ARR_SIZE (ARR_WIDTH * ARR_WIDTH)
 
-// board is 8 x 8 or 10 x 10
+// board is 10 x 10
 #define BOARD_WIDTH 10
 
 typedef int square_t;
@@ -39,7 +39,7 @@ typedef int8_t fil_t;
 // pieces
 // -----------------------------------------------------------------------------
 
-#define PIECE_SIZE 5  // Number of bits in (ptype, color, orientation)
+#define PIECE_SIZE 5  // Number of bits in (ptype: 2, color: 1, orientation: 2)
 
 typedef int8_t piece_t;
 
@@ -139,7 +139,7 @@ typedef struct position {
   piece_t      board[ARR_SIZE];
   struct position  *history;     // history of position
   uint64_t     key;              // hash key
-  int          ply;              // Even ply are White, odd are Black
+  uint8_t      ply;              // Even ply are White, odd are Black
   move_t       last_move;        // move that led to this position
   victims_t    victims;          // pieces destroyed by shooter or stomper
   square_t     kloc[2];          // location of kings
