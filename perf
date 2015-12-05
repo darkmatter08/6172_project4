@@ -1,0 +1,3 @@
+cd player/; make clean; make; cd ../;
+awsrun perf record ./player/leiserchess my_tests/prof1
+aws-perf-report
