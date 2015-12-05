@@ -470,7 +470,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   return move_count;
 }
 
-void swap_positions(position_t *old, position_t *p) {
+void swap_positions(position_t * restrict old, position_t * restrict p) {
   p->ply = old->ply;
   p->key = old->key;
 
@@ -580,7 +580,16 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
       // stomped piece.  Let the caller remove the piece from the
       // board.
       stomped_dst_sq = from_sq;
-      printf("STOMPPPPPPPPPPPPPPP ISSUE");
+      for (int i = 0; i < HALF_NUM_PAWNS; i++) { // loop over black pawns
+        if (p->ploc[from_color][i] == from_sq) {
+          p->ploc[from_color][i] = to_sq;
+        }
+      }
+      for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+        if (p->ploc[to_color][i] == to_sq) {
+          p->ploc[to_color][i] = from_sq;
+        }
+      }
     } else if (PAWN == from_type && EMPTY == to_type){
       bool move_plist = false;
       for (int i = 0; i < HALF_NUM_PAWNS; i++) {
@@ -703,8 +712,8 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->board[stomped_sq] = 0;
     bool stomp_ploc = false;
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
-      if (stomped_sq == p->ploc[1-color][i]) {
-        p->ploc[1-color][i] = 0;
+      if (stomped_sq == p->ploc[color][i]) {
+        p->ploc[color][i] = 0;
         stomp_ploc = true;
         break;
       }
