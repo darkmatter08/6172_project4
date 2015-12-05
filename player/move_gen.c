@@ -654,7 +654,6 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->victims.zapped = p->board[victim_sq];
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     color_t color = color_of(p->board[victim_sq]);
-    printf("victim_sq %i\n", victim_sq);
     p->board[victim_sq] = 0;
     bool shot_ploc = false;
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
