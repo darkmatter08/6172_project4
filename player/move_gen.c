@@ -374,12 +374,9 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   return move_count;
 }
 
-void swap_positions(position_t * restrict old, position_t * restrict p) {
+inline void swap_positions(position_t * restrict old, position_t * restrict p) {
   p->ply = old->ply;
   p->key = old->key;
-
-  p->victims.stomped = old->victims.stomped;
-  p->victims.zapped = old->victims.zapped;
 
   for (int i = 0; i < ARR_SIZE; i++) {
     p->board[i] = old->board[i];
