@@ -647,7 +647,7 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
         pos_to_fen(old, fen_old);
         tbassert(false, "kloc issue\n");
       }
-      mark_laser_path(p, opp_color_to_move);
+      mark_laser_path(p, opp_color_to_move, false);
     }
   }
 

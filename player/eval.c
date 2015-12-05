@@ -133,7 +133,12 @@ ev_score_t kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int d
 //             path of the laser is marked with mark_mask
 // c : color of king shooting laser
 // mark_mask: what each square is marked with
-void mark_laser_path(position_t * restrict p, color_t c) {
+void mark_laser_path(position_t * restrict p, color_t c, bool zero_invalid_sqs) {
+  if (zero_invalid_sqs) {
+    for (int i = 0; i < ARR_SIZE; i++) {
+      p->laser_map[c][i] = 4;
+    }
+  }
   tbassert(p->laser_map[c][0] == 4, "laser map not blank");
 
   for (int i = 0; i < BOARD_WIDTH; i++) {
