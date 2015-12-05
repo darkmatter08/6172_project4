@@ -18,7 +18,7 @@ ifeq ($(UNAME),Darwin)
 else
 	OS_TYPE := Linux
 	#PFLAG := -D_XOPEN_SOURCE
-	CFLAGS := -std=gnu99 -lrt -Wall -g3
+	CFLAGS := -std=gnu99 -lrt -Wall -g3 -fcilkplus
 	LDFLAGS= -Wall -lm -lrt -ldl -lpthread
 endif
 endif
@@ -32,7 +32,7 @@ endif
 ifeq ($(DEBUG),1)
 	CFLAGS += -O0 -DDEBUG $(PFLAG)
 else
-	CFLAGS += -Ofast -fcilkplus -DNDEBUG $(PFLAG)
+	CFLAGS += -Ofast -DNDEBUG $(PFLAG)
 endif
 
 ifeq ($(REFERENCE),1)
