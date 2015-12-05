@@ -48,6 +48,8 @@ ev_score_t pcentral_calc(fil_t f, rnk_t r) {
 
 // setup lookup tables, etc
 void init_eval() {
+  // set all squares to laser_map to be INVALID value.
+  // board squares set to 0 every time eval is called
   for (int i = 0; i < ARR_SIZE; ++i) {
     laser_map_black[i] = 4;   // Invalid square
     laser_map_white[i] = 4;   // Invalid square
@@ -405,23 +407,37 @@ score_t eval(position_t *p, bool verbose) {
     score[c] += bonus;
   }
 
+  // grab values that are used in many heuristic functions. Saves work in other methods
   square_t wk = p->kloc[WHITE];
   fil_t wk_f = fil_of(wk);
   rnk_t wk_r = rnk_of(wk);
+
   square_t bk = p->kloc[BLACK];
   fil_t bk_f = fil_of(bk);
   rnk_t bk_r = rnk_of(bk);
+
+  // distances between kings in rank and file dimensions
   int delta_fil_w = wk_f - bk_f;
   int delta_rnk_w = wk_r - bk_r;
   int delta_fil_b = bk_f - wk_f;
   int delta_rnk_b = bk_r - wk_r;
-  tbassert(kface(p, fil_of(wk), rnk_of(wk)) == kface_opt(p, wk, delta_fil_b, delta_rnk_b), "kface does not match white\n");
-  tbassert(kface(p, fil_of(bk), rnk_of(bk)) == kface_opt(p, bk, delta_fil_w, delta_rnk_w), "kface does not match black\n");
+  tbassert(kface(p, fil_of(wk), rnk_of(wk)) ==
+           kface_opt(p, wk, delta_fil_b, delta_rnk_b),
+           "kface does not match white\n");
+  tbassert(kface(p, fil_of(bk), rnk_of(bk)) ==
+           kface_opt(p, bk, delta_fil_w, delta_rnk_w),
+           "kface does not match black\n");
+
   score[WHITE] += kface_opt(p, wk, delta_fil_b, delta_rnk_b);
   score[BLACK] += kface_opt(p, bk, delta_fil_w, delta_rnk_w);
 
-  tbassert(kaggressive(p, wk_f, wk_r, wk, WHITE) == kaggressive_opt(p, wk_f, wk_r, delta_fil_b, delta_rnk_b), "kaggressive does not match white\n");
-  tbassert(kaggressive(p, bk_f, bk_r, bk, BLACK) == kaggressive_opt(p, bk_f, bk_r, delta_fil_w, delta_rnk_w), "kaggressive does not match white\n");
+  tbassert(kaggressive(p, wk_f, wk_r, wk, WHITE)
+           == kaggressive_opt(p, wk_f, wk_r, delta_fil_b, delta_rnk_b),
+           "kaggressive does not match white\n");
+  tbassert(kaggressive(p, bk_f, bk_r, bk, BLACK) ==
+           kaggressive_opt(p, bk_f, bk_r, delta_fil_w, delta_rnk_w),
+           "kaggressive does not match white\n");
+
   score[WHITE] += kaggressive_opt(p, wk_f, wk_r, delta_fil_b, delta_rnk_b);
   score[BLACK] += kaggressive_opt(p, bk_f, bk_r, delta_fil_w, delta_rnk_w);
 
@@ -441,8 +457,12 @@ score_t eval(position_t *p, bool verbose) {
 
   score[WHITE] += MOBILITY * mobility_opt(p, wk, laser_map_black);
   score[BLACK] += MOBILITY * mobility_opt(p, bk, laser_map_white);
-  tbassert(mobility(p, WHITE, laser_map_black) == mobility_opt(p, wk, laser_map_black), "mobility does not match white\n");
-  tbassert(mobility(p, BLACK, laser_map_white) == mobility_opt(p, bk, laser_map_white), "mobility does not match black\n");
+  tbassert(mobility(p, WHITE, laser_map_black) ==
+           mobility_opt(p, wk, laser_map_black),
+           "mobility does not match white\n");
+  tbassert(mobility(p, BLACK, laser_map_white) ==
+           mobility_opt(p, bk, laser_map_white),
+           "mobility does not match black\n");
 
   // PAWNPIN Heuristic --- is a pawn immobilized by the enemy laser.
   int w_pawnpin = PAWNPIN * pawnpin(p, WHITE, laser_map_black);
