@@ -35,6 +35,10 @@ else
 	CFLAGS += -Ofast -DNDEBUG $(PFLAG)
 endif
 
+ifeq ($(VVECT),1)
+	CFLAGS += -ftree-vectorizer-verbose=1
+endif
+
 ifeq ($(REFERENCE),1)
 	CFLAGS += -DRUN_REFERENCE_CODE=1
 endif

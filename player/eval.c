@@ -366,6 +366,22 @@ int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
   }
 }
 
+
+// H_SQUARES_ATTACKABLE heuristic: for shooting the enemy king
+int h_squares_attackable_opt2(position_t *p, square_t o_king_sq, color_t c) {
+  float h_attackable = 0;
+  // Fire laser, recording in laser_map
+  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
+      if (laser_map[c][sq] != 0) {
+        h_attackable += h_dist(o_king_sq, sq);
+      }
+    }
+  }
+  return h_attackable;
+}
+
 // Static evaluation.  Returns score
 score_t eval(position_t *p, bool verbose) {
   tbassert(check_position_integrity(p), "pawn positions incorrect");
@@ -443,6 +459,7 @@ score_t eval(position_t *p, bool verbose) {
   score[WHITE] += kaggressive_opt(p, wk_f, wk_r, delta_fil_b, delta_rnk_b);
   score[BLACK] += kaggressive_opt(p, bk_f, bk_r, delta_fil_w, delta_rnk_w);
 
+
   for (color_t c = 0; c < 2; c++) {
     for (int i = 0; i < BOARD_WIDTH; i++) {
       int k = (FIL_ORIGIN + i) * ARR_WIDTH + RNK_ORIGIN;
@@ -452,11 +469,20 @@ score_t eval(position_t *p, bool verbose) {
     }
   }
 
-  score[WHITE] += HATTACK * h_squares_attackable_opt(p, bk, WHITE);
-  score[BLACK] += HATTACK * h_squares_attackable_opt(p, wk, BLACK);
+  tbassert(h_squares_attackable_opt(p, bk, WHITE) ==
+           h_squares_attackable_opt2(p, bk, WHITE),
+           "h_squares_attackable_opt2 broken");
+
+  tbassert(h_squares_attackable_opt(p, bk, BLACK) ==
+           h_squares_attackable_opt2(p, bk, BLACK),
+           "h_squares_attackable_opt2 broken");
+
+  score[WHITE] += HATTACK * h_squares_attackable_opt2(p, bk, WHITE);
+  score[BLACK] += HATTACK * h_squares_attackable_opt2(p, wk, BLACK);
 
   score[WHITE] += MOBILITY * mobility_opt(p, wk, laser_map[BLACK]);
   score[BLACK] += MOBILITY * mobility_opt(p, bk, laser_map[WHITE]);
+
   tbassert(mobility(p, WHITE, laser_map[BLACK]) ==
            mobility_opt(p, wk, laser_map[BLACK]),
            "mobility does not match white\n");
