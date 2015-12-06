@@ -27,7 +27,7 @@ int PAWNPIN;
 // Heuristics for static evaluation - described in the google doc
 // mentioned in the handout.
 
-float h_dist_lookup[BOARD_WIDTH][BOARD_WIDTH][ARR_SIZE];
+float h_dist_lookup[ARR_SIZE][ARR_SIZE];
 ev_score_t pcentral_lookup[BOARD_WIDTH][BOARD_WIDTH];
 
 
@@ -232,33 +232,14 @@ static inline void mark_laser_sq(position_t *p, square_t sq, color_t c) {
 }
 
 // H_SQUARES_ATTACKABLE heuristic: for shooting the enemy king
-int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c, bool mark_laser_path) {
+int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
   float h_attackable = 0;
-
-  if (mark_laser_path) {
-    for (int i = 0; i < ARR_SIZE; ++i) {
-      p->laser_map[c][i] = 4;   // Invalid square
-    }
-    for (int i = 0; i < BOARD_WIDTH; i++) {
-      int k = (FIL_ORIGIN + i) * ARR_WIDTH + RNK_ORIGIN;
-      for (int j = 0; j < BOARD_WIDTH; j++, k++) {
-        p->laser_map[c][k] = 0;
-      }
-    }
-  }
   // Fire laser, recording in laser_map
   square_t sq = p->kloc[c];
   int bdir = ori_of(p->board[sq]);
-  h_attackable += h_dist(fil_of(sq), rnk_of(sq), o_king_sq);
-  if (mark_laser_path) {
-    mark_laser_sq(p, sq, c);
-  }
-
+  h_attackable += h_dist(sq, o_king_sq);
   while (true) {
     sq += beam_of(bdir);
-    if (mark_laser_path) {
-      mark_laser_sq(p, sq, c);
-    }
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
     switch (ptype_of(p->board[sq])) {
@@ -349,8 +330,10 @@ score_t eval(position_t *p, bool verbose) {
   score[WHITE] += kaggressive_opt(p, wk_f, wk_r, delta_fil_b, delta_rnk_b);
   score[BLACK] += kaggressive_opt(p, bk_f, bk_r, delta_fil_w, delta_rnk_w);
 
-  score[WHITE] += HATTACK * h_squares_attackable_opt(p, bk, WHITE, color_to_move_of(p) == WHITE);
-  score[BLACK] += HATTACK * h_squares_attackable_opt(p, wk, BLACK, color_to_move_of(p) == BLACK);
+  score[WHITE] += HATTACK * h_squares_attackable_opt(p, bk, WHITE);
+  score[BLACK] += HATTACK * h_squares_attackable_opt(p, wk, BLACK);
+
+  mark_laser_path(p, color_to_move_of(p), true);
 
   score[WHITE] += MOBILITY * mobility_opt(p, wk, BLACK);
   score[BLACK] += MOBILITY * mobility_opt(p, bk, WHITE);
