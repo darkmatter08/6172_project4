@@ -75,9 +75,6 @@ int check_pawn_counts(position_t *p) {
   if (ploc_count == live_pawn_count) {
     return 1;
   }
-  char fen[200];
-  pos_to_fen(p, fen);
-  tbassert(0, fen);
   return 0;
 }
 
