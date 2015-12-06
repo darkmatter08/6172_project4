@@ -205,21 +205,7 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
                  bool strict) {
   color_t color_to_move = color_to_move_of(p);
   // Make sure that the enemy_laser map is marked
-  char laser_map[ARR_SIZE];
-
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map[i] = 4;   // Invalid square
-  }
-
-  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
-    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
-    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
-      laser_map[sq] = 0;
-    }
-  }
-
-  // 1 = path of laser with no moves
-  mark_laser_path(p, laser_map, opp_color(color_to_move));
+  char *laser_map = p->laser_map[opp_color(color_to_move)];
 
   int move_count = 0;
 
@@ -341,21 +327,8 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
                  bool strict) {
   color_t color_to_move = color_to_move_of(p);
   // Make sure that the enemy_laser map is marked
-  char laser_map[ARR_SIZE];
 
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map[i] = 4;   // Invalid square
-  }
-
-  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
-    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
-    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
-      laser_map[sq] = 0;
-    }
-  }
-
-  // 1 = path of laser with no moves
-  mark_laser_path(p, laser_map, opp_color(color_to_move));
+  char *laser_map = p->laser_map[opp_color(color_to_move)];
 
   int move_count = 0;
 
@@ -372,7 +345,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
 }
 
 inline void swap_positions(position_t * restrict old, position_t * restrict p) {
-  p->ply = old->ply;
+  p->ply = old->ply + 1;
   p->key = old->key;
 
   for (int i = 0; i < ARR_SIZE; i++) {
@@ -389,7 +362,7 @@ inline void swap_positions(position_t * restrict old, position_t * restrict p) {
   }
 }
 
-square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
+inline square_t low_level_make_move(position_t * restrict old, position_t * restrict p, move_t mv) {
   tbassert(mv != 0, "mv was zero.\n");
 
   square_t stomped_dst_sq = 0;
@@ -442,6 +415,12 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
 
   p->history = old;
   p->last_move = mv;
+
+  for (color_t c = 0; c < 2; c++) {
+    for (int i = 0; i < ARR_SIZE; i++) {
+      p->laser_map[c][i] = old->laser_map[c][i];
+    }
+  }
 
   tbassert(from_sq < ARR_SIZE && from_sq > 0, "from_sq: %d\n", from_sq);
   tbassert(p->board[from_sq] < (1 << PIECE_SIZE) && p->board[from_sq] >= 0,
@@ -525,9 +504,6 @@ square_t low_level_make_move(position_t *old, position_t *p, move_t mv) {
     p->board[from_sq] = from_piece;  // place rotated piece on board
     p->key ^= zob[from_sq][from_piece];              // ... and in hash
   }
-
-  // Increment ply
-  p->ply++;
 
   tbassert(p->key == compute_zob_key(p),
            "p->key: %"PRIu64", zob-key: %"PRIu64"\n",
@@ -676,6 +652,30 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
       });
   }
 
+  // now we will attempt to reuse the laser maps from old
+  // low_level_make_move copies the old values into p for us, now we need to see if those
+  // values still make sense
+
+  if (p->kloc[BLACK] == victim_sq || // if the king is a victim, game over, so don't copy laser_maps
+      p->kloc[WHITE] == victim_sq) {
+    return p->victims;
+  }
+
+  square_t to_sq = to_square(mv);
+  square_t from_sq = from_square(mv);
+
+  for (color_t c = 0; c < 2; c++) {
+    // if either to_sq or from_sq is on the old laser path, the path necessarily changes
+    if (old->laser_map[c][to_sq] != 0 ||
+        old->laser_map[c][from_sq] != 0 ||
+        // if there is a victim and it was on our path, then the path changes
+        (victim_sq != 0 && old->laser_map[c][victim_sq] != 0) ||
+        // if our king moved, then the path changes
+        old->kloc[c] == from_sq) {
+      // if something has in fact changed, then we have to compute the laser_map from scratch
+      mark_laser_path(p, c);
+    }
+  }
   return p->victims;
 }
 
