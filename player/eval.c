@@ -237,26 +237,28 @@ static inline void mark_laser_sq(position_t *p, square_t sq, color_t c) {
 int h_squares_attackable_opt(position_t *p, square_t o_king_sq, color_t c) {
   float h_attackable = 0;
   // Fire laser, recording in laser_map
+
   square_t sq = p->kloc[c];
   int bdir = ori_of(p->board[sq]);
-  h_attackable += h_dist(sq, o_king_sq);
+  h_attackable += h_dist(o_king_sq, sq);
+
   while (true) {
     sq += beam_of(bdir);
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
     switch (ptype_of(p->board[sq])) {
       case EMPTY:  // empty square
-        h_attackable += h_dist(sq, o_king_sq);
+        h_attackable += h_dist(o_king_sq, sq);
         break;
       case PAWN:  // Pawn
         bdir = reflect_of(bdir, ori_of(p->board[sq]));
-        h_attackable += h_dist(sq, o_king_sq);
+        h_attackable += h_dist(o_king_sq, sq);
         if (bdir < 0) {  // Hit back of Pawn
           return h_attackable;
         }
         break;
       case KING:  // King
-        h_attackable += h_dist(sq, o_king_sq);
+        h_attackable += h_dist(o_king_sq, sq);
         return h_attackable;
         break;
       case INVALID:  // Ran off edge of board
