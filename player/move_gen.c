@@ -341,7 +341,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
 }
 
 void swap_positions(position_t * restrict old, position_t * restrict p) {
-  p->ply = old->ply;
+  p->ply = old->ply + 1;
   p->key = old->key;
 
   p->victims.stomped = old->victims.stomped;
@@ -487,9 +487,6 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
     p->board[from_sq] = from_piece;  // place rotated piece on board
     p->key ^= zob[from_sq][from_piece];              // ... and in hash
   }
-
-  // Increment ply
-  p->ply++;
 
   tbassert(p->key == compute_zob_key(p),
            "p->key: %"PRIu64", zob-key: %"PRIu64"\n",
