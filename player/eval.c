@@ -32,10 +32,8 @@ int PAWNPIN;
 char laser_map[2][ARR_SIZE];
 
 float h_dist_lookup[ARR_SIZE][ARR_SIZE];
-ev_score_t pcentral_lookup[BOARD_WIDTH][BOARD_WIDTH];
 
-
-ev_score_t pcentral_calc(fil_t f, rnk_t r) {
+ev_score_t pcentral(fil_t f, rnk_t r) {
   double df = BOARD_WIDTH/2 - f - 1;
   if (df < 0)  df = f - BOARD_WIDTH/2;
   double dr = BOARD_WIDTH/2 - r - 1;
@@ -56,7 +54,6 @@ void init_eval() {
   for (fil_t fa = 0; fa < BOARD_WIDTH; fa++) {
     square_t sq = (FIL_ORIGIN + fa) * ARR_WIDTH + RNK_ORIGIN;
     for (rnk_t ra = 0; ra < BOARD_WIDTH; ra++, sq++) {
-      pcentral_lookup[fa][ra] = pcentral_calc(fa, ra);
       for (fil_t fb = 0; fb < BOARD_WIDTH; fb++) {
         square_t b = (FIL_ORIGIN + fb) * ARR_WIDTH + RNK_ORIGIN;
         for (rnk_t rb = 0; rb < BOARD_WIDTH; rb++, b++) {
@@ -68,12 +65,6 @@ void init_eval() {
       }
     }
   }
-}
-
-// PCENTRAL heuristic: Bonus for Pawn near center of board
-ev_score_t pcentral(fil_t f, rnk_t r) {
-  tbassert(pcentral_lookup[f][r] == pcentral_calc(f, r), "foo");
-  return pcentral_lookup[f][r];
 }
 
 // returns true if c lies on or between a and b, which are not ordered
