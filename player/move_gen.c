@@ -411,9 +411,11 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
 
   p->history = old;
   p->last_move = mv;
-  color_t c = color_to_move_of(old);
-  for (int i = 0; i < ARR_SIZE; i++) {
-    p->laser_map[c][i] = old->laser_map[c][i];
+
+  for (color_t c = 0; c < 2; c++) {
+    for (int i = 0; i < ARR_SIZE; i++) {
+      p->laser_map[c][i] = old->laser_map[c][i];
+    }
   }
 
   tbassert(from_sq < ARR_SIZE && from_sq > 0, "from_sq: %d\n", from_sq);
@@ -623,31 +625,30 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
       });
   }
 
-  square_t to_sq = to_square(mv);
-  square_t from_sq = from_square(mv);
-  color_t color_to_move = color_to_move_of(p);
-  color_t opp_color_to_move = opp_color(color_to_move);
+  // now we will attempt to reuse the laser maps from old
+  // low_level_make_move copies the old values into p for us, now we need to see if those
+  // values still make sense
 
-  if (ptype_of(old->board[victim_sq]) != KING &&
-      p->kloc[BLACK] != victim_sq &&
-      p->kloc[WHITE] != victim_sq) {
-    if (old->laser_map[opp_color_to_move][to_sq] != 0 ||
-        old->laser_map[opp_color_to_move][from_sq] != 0 ||
-        victim_sq != 0 ||
-        (ptype_of(old->board[from_sq]) == KING)) {
-      if (ptype_of(p->board[p->kloc[opp_color_to_move]]) != KING) {
-        char move_str[MAX_CHARS_IN_MOVE];
-        move_to_str(mv, move_str, MAX_CHARS_IN_MOVE);
-        char fen_old[200];
-        char fen_new[200];
-        pos_to_fen(p, fen_new);
-        pos_to_fen(old, fen_old);
-        tbassert(false, "kloc issue\n");
-      }
-      mark_laser_path(p, opp_color_to_move, false);
-    }
+  if (p->kloc[BLACK] == victim_sq || // if the king is a victim, game over, so don't copy laser_maps
+      p->kloc[WHITE] == victim_sq) {
+    return p->victims;
   }
 
+  square_t to_sq = to_square(mv);
+  square_t from_sq = from_square(mv);
+
+  for (color_t c = 0; c < 2; c++) {
+    // if either to_sq or from_sq is on the old laser path, the path necessarily changes
+    if (old->laser_map[c][to_sq] != 0 ||
+        old->laser_map[c][from_sq] != 0 ||
+        // if there is a victim and it was on our path, then the path changes
+        (victim_sq != 0 && old->laser_map[c][victim_sq] != 0) ||
+        // if our king moved, then the path changes
+        old->kloc[c] == from_sq) {
+      // if something has in fact changed, then we have to compute the laser_map from scratch
+      mark_laser_path(p, c);
+    }
+  }
   return p->victims;
 }
 

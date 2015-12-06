@@ -389,8 +389,8 @@ int fen_to_pos(position_t *p, char *fen) {
     return 1;
   }
 
-  mark_laser_path(p, BLACK, true);
-  mark_laser_path(p, WHITE, true);
+  clean_and_mark_laser_path(p, BLACK);
+  clean_and_mark_laser_path(p, WHITE);
 
   char c;
   bool done = false;

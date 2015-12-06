@@ -127,6 +127,13 @@ ev_score_t kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int d
   return (KAGGRESSIVE * bonus) / (BOARD_WIDTH * BOARD_WIDTH);
 }
 
+void clean_and_mark_laser_path(position_t * restrict p, color_t c) {
+  for (int i = 0; i < ARR_SIZE; i++) {
+    p->laser_map[c][i] = 4;
+  }
+  mark_laser_path(p, c);
+}
+
 // Marks the path of the laser until it hits a piece or goes off the board.
 //
 // p : current board state
@@ -134,12 +141,7 @@ ev_score_t kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int d
 //             path of the laser is marked with mark_mask
 // c : color of king shooting laser
 // mark_mask: what each square is marked with
-void mark_laser_path(position_t * restrict p, color_t c, bool zero_invalid_sqs) {
-  if (zero_invalid_sqs) {
-    for (int i = 0; i < ARR_SIZE; i++) {
-      p->laser_map[c][i] = 4;
-    }
-  }
+void mark_laser_path(position_t * restrict p, color_t c) {
   tbassert(p->laser_map[c][0] == 4, "laser map not blank");
 
   for (int i = 0; i < BOARD_WIDTH; i++) {
@@ -332,8 +334,6 @@ score_t eval(position_t *p, bool verbose) {
 
   score[WHITE] += HATTACK * h_squares_attackable_opt(p, bk, WHITE);
   score[BLACK] += HATTACK * h_squares_attackable_opt(p, wk, BLACK);
-
-  mark_laser_path(p, color_to_move_of(p), true);
 
   score[WHITE] += MOBILITY * mobility_opt(p, wk, BLACK);
   score[BLACK] += MOBILITY * mobility_opt(p, bk, WHITE);
