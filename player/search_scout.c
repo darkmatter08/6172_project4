@@ -7,6 +7,7 @@
 
 #include "./tbassert.h"
 #include "./simple_mutex.h"
+#include <cilk/reducer_opadd.h>
 
 #define BEST_MOVE_HEADER 5
 
@@ -132,18 +133,16 @@ static score_t scout_search(searchNode *node, int depth,
   }
 
   if (!node->abort) {
+    CILK_C_REDUCER_OPADD(r, int, number_of_moves_evaluated);
+    CILK_C_REGISTER_REDUCER(r);
     sort_all(move_list, num_of_moves, BEST_MOVE_HEADER);
     cilk_for (int mv_index = BEST_MOVE_HEADER; mv_index < num_of_moves; mv_index++) {
       do {
         if (node->abort) continue;
         
-        //simple_acquire(&node_mutex);
-        // Sort up to number_of_moves_evaluated
-        //sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
-        //int local_index = number_of_moves_evaluated++;
-        //simple_release(&node_mutex);
-
-        int local_index = __sync_fetch_and_add(&number_of_moves_evaluated, 1);
+        //int local_index = __sync_fetch_and_add(&number_of_moves_evaluated, 1);
+        int local_index = r.value;
+        REDUCER_VIEW(r) += 1;
 
         // Get the next move from the move list.
         move_t mv = get_move(move_list[local_index]);
@@ -181,6 +180,7 @@ static score_t scout_search(searchNode *node, int depth,
         }
       } while (false);
     }
+    CILK_C_UNREGISTER_REDUCER(r);
   }
 
   if (parallel_parent_aborted(node)) {
