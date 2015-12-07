@@ -157,7 +157,8 @@ victims_t make_from_string(position_t *old, position_t *p,
       break;
     }
   }
-
+  clean_and_mark_laser_path(old, BLACK);
+  clean_and_mark_laser_path(old, WHITE);
   return (mv == 0) ? ILLEGAL() : make_move(old, p, mv);
 }
 
