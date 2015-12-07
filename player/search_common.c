@@ -366,6 +366,18 @@ void evaluateMove(searchNode *node, move_t mv, move_t killer_a,
   return;
 }
 
+void sort_all(sortable_move_t *move_list, int num_of_moves, int mv_index) {
+  for (int j = 0; j < num_of_moves; j++) {
+    sortable_move_t insert = move_list[j];
+    int hole = j;
+    while (hole > 0 && insert > move_list[hole-1]) {
+      move_list[hole] = move_list[hole-1];
+      hole--;
+    }
+    move_list[hole] = insert;
+  }
+}
+
 // Incremental sort of the move list.
 void sort_incremental(sortable_move_t *move_list, int num_of_moves, int mv_index) {
   // Return on the last one because it is already sorted and our for loop starts

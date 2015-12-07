@@ -132,15 +132,18 @@ static score_t scout_search(searchNode *node, int depth,
   }
 
   if (!node->abort) {
+    sort_all(move_list, num_of_moves, BEST_MOVE_HEADER);
     cilk_for (int mv_index = BEST_MOVE_HEADER; mv_index < num_of_moves; mv_index++) {
       do {
         if (node->abort) continue;
         
-        simple_acquire(&node_mutex);
+        //simple_acquire(&node_mutex);
         // Sort up to number_of_moves_evaluated
-        sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
-        int local_index = number_of_moves_evaluated++;
-        simple_release(&node_mutex);
+        //sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
+        //int local_index = number_of_moves_evaluated++;
+        //simple_release(&node_mutex);
+
+        int local_index = __sync_fetch_and_add(&number_of_moves_evaluated, 1);
 
         // Get the next move from the move list.
         move_t mv = get_move(move_list[local_index]);
