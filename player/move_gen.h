@@ -30,6 +30,14 @@ typedef int8_t fil_t;
 #define FIL_ORIGIN ((ARR_WIDTH - BOARD_WIDTH) / 2)
 #define RNK_ORIGIN ((ARR_WIDTH - BOARD_WIDTH) / 2)
 
+// Beam Directions
+#define NORTH 0
+#define EAST  1
+#define SOUTH 2
+#define WEST  3
+
+#define BM_ENTRY_SZ 16
+
 #define FIL_SHIFT 4
 #define FIL_MASK 15
 #define RNK_SHIFT 0
@@ -143,8 +151,20 @@ typedef struct position {
   move_t       last_move;        // move that led to this position
   victims_t    victims;          // pieces destroyed by shooter or stomper
   square_t     kloc[2];          // location of kings
-  square_t     ploc[NUM_PAWNS];
+  square_t     ploc[NUM_PAWNS];  // location of pawns
+  uint16_t     bm_rnk[BOARD_WIDTH];  // bit map of all pieces on board by rank (e.g. bm_rnk[0] --> rank 0)
+  uint16_t     bm_fil[BOARD_WIDTH];  // bit map of all pieces on board by file (e.g. bm_fil[0] --> file a)
 } position_t;
+
+static inline void set_bm(position_t *p, fil_t f, rnk_t r) {
+  p->bm_fil[f] |= 1 << (BM_ENTRY_SZ - r - 1);
+  p->bm_rnk[r] |= 1 << (BM_ENTRY_SZ - f - 1);
+}
+
+static inline void unset_bm(position_t *p, fil_t f, rnk_t r) {
+  p->bm_fil[f] &= ~(1 << (BM_ENTRY_SZ - r - 1));
+  p->bm_rnk[r] &= ~(1 << (BM_ENTRY_SZ - f - 1));
+}
 
 static inline color_t color_to_move_of(position_t *p) {
   if ((p->ply & 1) == 0) {
@@ -239,6 +259,7 @@ static inline rnk_t rnk_of(square_t sq) {
 
 int check_position_integrity(position_t *p);
 int check_pawn_counts(position_t *p);
+int check_bm(position_t *p);
 char *color_to_str(color_t c);
 void init_zob();
 int square_to_str(square_t sq, char *buf, size_t bufsize);

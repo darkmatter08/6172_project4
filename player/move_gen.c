@@ -73,6 +73,30 @@ int check_pawn_counts(position_t *p) {
   return 0;
 }
 
+int check_bm(position_t *p) {
+  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
+      if (ptype_of(p->board[sq]) == KING || ptype_of(p->board[sq]) == PAWN) {
+        if ((p->bm_fil[f] >> (BM_ENTRY_SZ - r - 1) & 1) == 1 && (p->bm_rnk[r] >> (BM_ENTRY_SZ - f - 1) & 1) == 1) {
+          continue;
+        } else {
+          printf("failed for fil %d rnk %d - should be 1\n", f, r);
+          return 0;
+        }
+      } else {
+        if ((p->bm_fil[f] >> (BM_ENTRY_SZ - r - 1) & 1) == 0 && (p->bm_rnk[r] >> (BM_ENTRY_SZ - f - 1) & 1) == 0) {
+          continue;
+        } else {
+          printf("failed for fil %d rnk %d - should be 0\n", f, r);
+          return 0;
+        }
+      }
+    }
+  }
+  return 1;
+}
+
 // King orientations
 char *king_ori_to_rep[2][NUM_ORI] = { { "NN", "EE", "SS", "WW" },
                                       { "nn", "ee", "ss", "ww" } };
@@ -355,6 +379,11 @@ void swap_positions(position_t * restrict old, position_t * restrict p) {
   p->victims.stomped = old->victims.stomped;
   p->victims.zapped = old->victims.zapped;
 
+  for (int i = 0; i < BOARD_WIDTH; i++) {
+    p->bm_rnk[i] = old->bm_rnk[i];
+    p->bm_fil[i] = old->bm_fil[i];
+  }
+
   for (int i = 0; i < ARR_SIZE; i++) {
     p->board[i] = old->board[i];
   }
@@ -462,6 +491,8 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
           break;
         }
       }
+      set_bm(p, fil_of(to_sq), rnk_of(to_sq));
+      unset_bm(p, fil_of(from_sq), rnk_of(from_sq));
     }
 
     // Hash key updates
@@ -476,9 +507,13 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
 
     // Update King locations if necessary
     if (from_type == KING) {
+      set_bm(p, fil_of(to_sq), rnk_of(to_sq));
+      unset_bm(p, fil_of(from_sq), rnk_of(from_sq));
       p->kloc[from_color] = to_sq;
     }
     if (to_type == KING) {
+      set_bm(p, fil_of(to_sq), rnk_of(to_sq));
+      unset_bm(p, fil_of(from_sq), rnk_of(from_sq));
       p->kloc[to_color] = from_sq;
     }
 
@@ -499,9 +534,90 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
       display(p);
     });
 
+  tbassert(check_bm(p), "Board Bit Map Does Not Match Board after LowLevelMakeMove");
   return stomped_dst_sq;
 }
 
+
+// returns square of piece to be remove from board or 0
+square_t fire_opt(position_t *p) {
+  color_t fake_color_to_move = (color_to_move_of(p) == WHITE) ? BLACK : WHITE;
+  square_t sq = p->kloc[fake_color_to_move];
+  int bdir = ori_of(p->board[sq]);
+
+  uint16_t path;
+  piece_t piece;
+
+  while (true) {
+    switch(bdir) {
+      case NORTH:  // up ranks for same file
+        path = p->bm_fil[fil_of(sq)];
+        path <<= rnk_of(sq) + 1;  // shift to remove all bits south of king
+        if (path == 0) {
+          // no pieces above king
+          return 0;
+        }
+        // Explanation of sq update for NORTH case
+        // x = __builtin_clz(path) --> leading zeros for 32-bit number
+        // y = x - BM_ENTRY_SZ --> number of zeros between king and hit piece
+        // y - 1 --> correct such that updated sq is location of hit piece
+        sq += __builtin_clz(path) - (BM_ENTRY_SZ - 1);
+        break;
+      case EAST:  // right files for same rank
+        path = p->bm_rnk[rnk_of(sq)];
+        path <<= fil_of(sq) + 1;  // shift to remove all bits west of king
+        if (path == 0) {
+          // no pieces right of king
+          return 0;
+        }
+        // Explanation of sq update for EAST case
+        // x = __builtin_clz(path) --> leading zeros for 32-bit number
+        // y = x - BM_ENTRY_SZ --> number of zeros between king and hit piece
+        // z = y - 1 --> correct such that updated sq is location of hit piece
+        // z * ARR_WIDTH --> account for moving across files (jump by ARR_WIDTH)
+        sq += (__builtin_clz(path) - (BM_ENTRY_SZ - 1)) * ARR_WIDTH;
+        break;
+      case SOUTH:  // down ranks for same file
+        path = p->bm_fil[fil_of(sq)];
+        path >>= BM_ENTRY_SZ - rnk_of(sq);  // shift to remove all bits north of king
+        if (path == 0) {
+          // no pieces below king
+          return 0;
+        }
+        // Explanation of sq update for SOUTH case
+        // x = __builtin_ctz(path) --> trailing zeros for 32-bit number (number of
+        // zeros between king and hit piece)
+        // x + 1 --> correct such that updated sq is location of hit piece
+        sq -= __builtin_ctz(path) + 1;
+        break;
+      case WEST:  // left files for same rank
+        path = p->bm_rnk[rnk_of(sq)];
+        path >>= BM_ENTRY_SZ - fil_of(sq);  // shift to remove all bits west of king
+        if (path == 0) {
+          // no pieces left of king
+          return 0;
+        }
+        // Explanation of sq update for SOUTH case
+        // x = __builtin_ctz(path) --> trailing zeros for 32-bit number (number of
+        // zeros between king and hit piece)
+        // y = x + 1 --> correct such that updated sq is location of hit piece
+        // y * ARR_WIDTH --> account for moving across files (jumpy by ARR_WIDTH)
+        sq -= (__builtin_ctz(path) + 1) * ARR_WIDTH;
+        break;
+      default:
+        tbassert(false, "bdir was not an expected direction");
+        break;
+    }
+    piece = p->board[sq];
+    if (ptype_of(piece) == KING) {
+      return sq;  // game over
+    }
+    bdir = reflect_of(bdir, ori_of(piece));
+    if (bdir < 0) {
+      return sq;  // hit back of pawn
+    }
+  }
+}
 
 // returns square of piece to be removed from board or 0
 square_t fire(position_t *p) {
@@ -564,6 +680,8 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
   } else {  // we definitely stomped something
     p->victims.stomped = p->board[stomped_sq];
 
+    unset_bm(p, fil_of(stomped_sq), rnk_of(stomped_sq));
+
     p->key ^= zob[stomped_sq][p->victims.stomped];   // remove from board
     p->board[stomped_sq] = 0;
     for (int i = 0; i < NUM_PAWNS; i++) {
@@ -585,7 +703,8 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
   }
 
   // move phase 2 - shooting the laser
-  square_t victim_sq = fire(p);
+  square_t victim_sq = fire_opt(p);
+  tbassert(fire(p) == fire_opt(p), "victim of lasers for fire impl do not match");
 
   WHEN_DEBUG_VERBOSE({
       if (victim_sq != 0) {
@@ -604,6 +723,7 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     }
   } else {  // we definitely hit something with laser
     p->victims.zapped = p->board[victim_sq];
+    unset_bm(p, fil_of(victim_sq), rnk_of(victim_sq));
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     p->board[victim_sq] = 0;
     for (int i = 0; i < NUM_PAWNS; i++) {
@@ -624,6 +744,7 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
       });
   }
 
+  tbassert(check_bm(p), "Board Bit Map does not match Board after MakeMove");
   return p->victims;
 }
 

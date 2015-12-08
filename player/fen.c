@@ -357,12 +357,15 @@ int fen_to_pos(position_t *p, char *fen) {
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
     square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
     for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
+      unset_bm(p, f, r);
       piece_t x = p->board[sq];
       ptype_t typ = ptype_of(x);
       if (typ == KING) {
+        set_bm(p, f, r);
         Kings[color_of(x)]++;
         p->kloc[color_of(x)] = sq;
       } else if (typ == PAWN) {
+        set_bm(p, f, r);
         p->ploc[pawn_index] = sq;
         pawn_index++;
       }
@@ -375,6 +378,7 @@ int fen_to_pos(position_t *p, char *fen) {
 
   tbassert(check_position_integrity(p), "pawn positions incorrect");
   tbassert(check_pawn_counts(p), "pawn counts are off");
+  tbassert(check_bm(p), "Bit Map of Pieces does not match Board");
   if (Kings[WHITE] == 0) {
     fen_error(fen, c_count, "No White Kings");
     return 1;
