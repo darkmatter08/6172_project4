@@ -1,0 +1,2 @@
+go depth 12
+quit

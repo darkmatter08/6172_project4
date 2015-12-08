@@ -146,7 +146,6 @@ typedef struct position {
   victims_t    victims;          // pieces destroyed by shooter or stomper
   square_t     kloc[2];          // location of kings
   square_t     ploc[2][HALF_NUM_PAWNS]; // locations of pawns
-  char         laser_map[2][ARR_SIZE]; // laser_maps for each color
 } position_t;
 
 static inline color_t color_to_move_of(position_t *p) {
@@ -267,7 +266,6 @@ bool is_KO(victims_t victims);
 bool zero_victims(victims_t victims);
 bool victim_exists(victims_t victims);
 
-void mark_laser_path(position_t *p, color_t c);
-void clean_and_mark_laser_path(position_t *p, color_t c);
+void mark_laser_path(position_t * restrict p, char * restrict, color_t c);
 
 #endif  // MOVE_GEN_H
