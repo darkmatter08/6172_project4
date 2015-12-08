@@ -370,6 +370,9 @@ int fen_to_pos(position_t *p, char *fen) {
     }
   }
 
+  p->ploc_dead_i[WHITE] = pawn_indices[WHITE] - 1;
+  p->ploc_dead_i[BLACK] = pawn_indices[BLACK] - 1;
+
   int white_pawn_index = pawn_indices[WHITE];
   for (; white_pawn_index < HALF_NUM_PAWNS; white_pawn_index++) {
     p->ploc[WHITE][white_pawn_index] = 0;

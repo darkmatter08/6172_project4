@@ -342,7 +342,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
 
   square_t k = p->kloc[color_to_move];
   move_count = generate_king_moves(p, k, sortable_move_list, move_count);
-  for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+  for (int i = 0; i < p->ploc_dead_i[color_to_move] + 1; i++) {
     square_t pawn = p->ploc[color_to_move][i];
     if (pawn != 0) {
       move_count = generate_pawn_moves(p, pawn, color_to_move, sortable_move_list, move_count, laser_map);
@@ -368,6 +368,8 @@ inline void swap_positions(position_t * restrict old, position_t * restrict p) {
   for (int i = 0; i < HALF_NUM_PAWNS; i++) {
     p->ploc[BLACK][i] = old->ploc[BLACK][i];
   }
+  p->ploc_dead_i[WHITE] = old->ploc_dead_i[WHITE];
+  p->ploc_dead_i[BLACK] = old->ploc_dead_i[BLACK];
 }
 
 inline square_t low_level_make_move(position_t * restrict old, position_t * restrict p, move_t mv) {
@@ -458,27 +460,28 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
       // We're stomping a piece.  Return the destination of the
       // stomped piece.  Let the caller remove the piece from the
       // board.
+      //
+      // loop over black pawns
       stomped_dst_sq = from_sq;
-      for (int i = 0; i < HALF_NUM_PAWNS; i++) { // loop over black pawns
+      for (int i = 0; i < p->ploc_dead_i[from_color] + 1; i++) {
         if (p->ploc[from_color][i] == from_sq) {
           p->ploc[from_color][i] = to_sq;
           break;
         }
       }
-      for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+      for (int i = 0; i < p->ploc_dead_i[to_color] + 1; i++) {
         if (p->ploc[to_color][i] == to_sq) {
           p->ploc[to_color][i] = from_sq;
           break;
         }
       }
     } else if (PAWN == from_type && EMPTY == to_type){
-      for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+      for (int i = 0; i < p->ploc_dead_i[from_color] + 1; i++) {
         if (from_sq == p->ploc[from_color][i]) {
           p->ploc[from_color][i] = to_sq;
           break;
         }
       }
-      tbassert(move_plist, "Should find a piece in the ploc that moved\n");
     }
 
     // Hash key updates
@@ -584,13 +587,14 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->key ^= zob[stomped_sq][p->victims.stomped];   // remove from board
     color_t color = color_of(p->board[stomped_sq]);
     p->board[stomped_sq] = 0;
-    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+    for (int i = 0; i < p->ploc_dead_i[color] + 1; i++) {
       if (stomped_sq == p->ploc[color][i]) {
-        p->ploc[color][i] = 0;
+        p->ploc[color][i] = p->ploc[color][p->ploc_dead_i[color]];
+        p->ploc[color][p->ploc_dead_i[color]] = 0;
+        if (p->ploc_dead_i[color] > 0) p->ploc_dead_i[color]--;
         break;
       }
     }
-    tbassert(stomp_ploc, "Should find a piece in the ploc that is stomped\n");
     p->key ^= zob[stomped_sq][p->board[stomped_sq]];
 
     tbassert(p->key == compute_zob_key(p),
@@ -625,9 +629,11 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     color_t color = color_of(p->board[victim_sq]);
     p->board[victim_sq] = 0;
-    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+    for (int i = 0; i < p->ploc_dead_i[color] + 1; i++) {
       if (victim_sq == p->ploc[color][i]) {
-        p->ploc[color][i] = 0;
+        p->ploc[color][i] = p->ploc[color][p->ploc_dead_i[color]];
+        p->ploc[color][p->ploc_dead_i[color]] = 0;
+        if (p->ploc_dead_i[color] > 0) p->ploc_dead_i[color]--;
         break;
       }
     }
@@ -676,14 +682,16 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
     move_t mv = get_move(lst[i]);
 
     square_t stomped_sq = low_level_make_move(p, &np, mv);  // make the move baby!
-    color_t color = color_of(p->board[stomped_sq]);
-    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
-      if (stomped_sq == p->ploc[1-color][i]) {
-        p->ploc[1-color][i] = 0;
+    // Choose the opposite color (1 - color_of)
+    color_t color = 1 - color_of(p->board[stomped_sq]);
+    for (int i = 0; i < p->ploc_dead_i[color] + 1; i++) {
+      if (stomped_sq == p->ploc[color][i]) {
+        p->ploc[color][i] = p->ploc[color][p->ploc_dead_i[color]];
+        p->ploc[color][p->ploc_dead_i[color]] = 0;
+        if (p->ploc_dead_i[color] > 0) p->ploc_dead_i[color]--;
         break;
       }
     }
-    tbassert(stomp_ploc, "Should find a piece in the ploc that is stomped in perft_search\n");
 
     if (stomped_sq != 0) {
       tbassert(ptype_of(np.board[stomped_sq]) == PAWN,
@@ -708,9 +716,11 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
       np.victims.zapped = np.board[victim_sq];
       np.key ^= zob[victim_sq][np.victims.zapped];   // remove from board
       color_t color = color_of(p->board[victim_sq]);
-      for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+      for (int i = 0; i < p->ploc_dead_i[color] + 1; i++) {
         if (victim_sq == np.ploc[color][i]) {
-          np.ploc[color][i] = 0;
+          np.ploc[color][i] = np.ploc[color][np.ploc_dead_i[color]];
+          np.ploc[color][np.ploc_dead_i[color]] = 0;
+          if (np.ploc_dead_i[color] > 0) np.ploc_dead_i[color]--;
           break;
         }
       }

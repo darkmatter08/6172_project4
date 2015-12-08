@@ -184,11 +184,8 @@ int pawnpin(position_t * restrict p, color_t color, char * restrict opposite_col
   int pinned_pawns = 0;
 
   // Figure out which pawns are not pinned down by the laser.
-  for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+  for (int i = 0; i < p->ploc_dead_i[color] + 1; i++) {
     square_t sq = p->ploc[color][i];
-    if (sq == 0) {
-      continue;
-    }
     tbassert(color_of(p->board[sq]) == color, "Iterating through a color should all be the right ones\n");
     if (opposite_color_laser_map[sq] == 0) {
       pinned_pawns += 1;
@@ -270,11 +267,8 @@ score_t eval(position_t *p, bool verbose) {
   char buf[MAX_CHARS_IN_MOVE];
 
   for (int color = WHITE; color < 2; color++) {
-    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+    for (int i = 0; i < p->ploc_dead_i[color] + 1; i++) {
       square_t sq = p->ploc[color][i];
-      if (sq == 0) {
-        continue;
-      }
       bonus = PAWN_EV_VALUE;
       if (verbose) {
         printf("MATERIAL bonus %d for %s Pawn on %s\n", bonus, color_to_str(color), buf);
