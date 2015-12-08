@@ -139,7 +139,7 @@ typedef struct position {
   piece_t      board[ARR_SIZE];
   struct position  *history;     // history of position
   uint64_t     key;              // hash key
-  uint8_t      ply;              // Even ply are White, odd are Black
+  uint16_t      ply;              // Even ply are White, odd are Black
   move_t       last_move;        // move that led to this position
   victims_t    victims;          // pieces destroyed by shooter or stomper
   square_t     kloc[2];          // location of kings
