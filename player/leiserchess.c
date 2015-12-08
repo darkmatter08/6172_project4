@@ -16,12 +16,6 @@
 #include <cilk/reducer.h>
 #include <cilk/cilk_api.h>
 
-#if TEST
-  #define NUM_CILK_WRKRS "1"
-#else
-  #define NUM_CILK_WRKRS "8"
-#endif
-
 #include "./eval.h"
 #include "./fen.h"
 #include "./move_gen.h"
@@ -402,7 +396,6 @@ void print_options() {
 // -----------------------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
-  __cilkrts_set_param("nworkers", NUM_CILK_WRKRS);
   position_t *gme = (position_t *) malloc(sizeof(position_t) * MAX_PLY_IN_GAME);
 
 

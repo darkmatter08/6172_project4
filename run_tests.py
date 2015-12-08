@@ -135,8 +135,8 @@ if __name__ == '__main__':
     exe_o = 'exe_result_' + str(count)
 
     # Run each implementation on test files
-    call(awsrun + ' ' + REFERENCE_EXE + ' ' + test_dir +  test_file + ' > ' + ref_o, shell=True)
-    call(awsrun + ' ' + exe + ' ' + test_dir +  test_file + ' > ' + exe_o, shell=True)
+    call(awsrun + ' CILK_NWORKERS=1 ' + REFERENCE_EXE + ' ' + test_dir +  test_file + ' > ' + ref_o, shell=True)
+    call(awsrun + ' CILK_NWORKERS=1 ' + exe + ' ' + test_dir +  test_file + ' > ' + exe_o, shell=True)
 
     # Get best move path found for each impl
     ref_result = get_bestmove_path(ref_o)
