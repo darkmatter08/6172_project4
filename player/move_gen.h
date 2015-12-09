@@ -237,23 +237,6 @@ static inline rnk_t rnk_of(square_t sq) {
 }
 
 static inline piece_t get_piece(position_t *p, square_t sq) {
-  /* if (rnk_of(sq) < 0 || rnk_of(sq) >= BOARD_WIDTH ||
-   *     fil_of(sq) < 0 || fil_of(sq) >= BOARD_WIDTH) {
-   *   return p->board[sq];
-   *   return 0x1C;
-   * }
-   * for (color_t c = 0; c < 2; c++) {
-   *   for (int i = 0; i < HALF_NUM_PAWNS; i++) {
-   *     if (p->ploc[c][i] == sq) {
-   *       return p->p_piece[c][i];
-   *     }
-   *   }
-   *   if (p->kloc[c] == sq) {
-   *     return p->k_piece[c];
-   *   }
-   * }
-   * return p->board[sq];
-   * return 0; */
   return p->board[sq];
 }
 

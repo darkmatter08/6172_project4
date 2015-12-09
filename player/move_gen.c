@@ -335,10 +335,6 @@ int generate_king_moves(position_t *p, square_t sq, sortable_move_t *sortable_mo
 }
 
 int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *sortable_move_list, int move_count, char *laser_map) {
-  if (laser_map[sq] == 1) {
-    return move_count;
-  }
-
   for (int d = 0; d < 8; d++) {
     int dest = sq + dir_of(d);
     piece_t piece = get_piece(p, dest);
@@ -373,7 +369,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   move_count = generate_king_moves(p, k, sortable_move_list, move_count);
   for (int i = 0; i < HALF_NUM_PAWNS; i++) {
     square_t pawn = p->ploc[color_to_move][i];
-    if (pawn != 0) {
+    if (pawn != 0 && laser_map[pawn] == 0) {
       move_count = generate_pawn_moves(p, pawn, color_to_move, sortable_move_list, move_count, laser_map);
     }
   }
