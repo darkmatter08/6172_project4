@@ -138,7 +138,6 @@ typedef struct victims_t {
 // -----------------------------------------------------------------------------
 
 typedef struct position {
-  piece_t      board[ARR_SIZE];
   struct position  *history;     // history of position
   uint64_t     key;              // hash key
   uint16_t      ply;              // Even ply are White, odd are Black

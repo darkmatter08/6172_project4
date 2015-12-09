@@ -30,29 +30,29 @@ char *color_to_str(color_t c) {
 // -----------------------------------------------------------------------------
 
 bool check_piece_lists(position_t *p) {
-  for (color_t c = 0; c < 2; c++) {
-    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
-      if (p->ploc[c][i] == 0) {
-        if (p->p_piece[c][i] != 0) {
-          tbassert(false, "foo");
-          return false;
-        }
-        continue;
-      }
-      if (p->board[p->ploc[c][i]] != p->p_piece[c][i]) {
-        tbassert(false, "foo");
-        return false;
-      }
-      if (ptype_of(p->p_piece[c][i]) != PAWN || color_of(p->p_piece[c][i]) != c) {
-        tbassert(false, "foo");
-        return false;
-      }
-    }
-    if (p->board[p->kloc[c]] != p->k_piece[c]) {
-      tbassert(false, "foo");
-      return false;
-    }
-  }
+  /* for (color_t c = 0; c < 2; c++) {
+   *   for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+   *     if (p->ploc[c][i] == 0) {
+   *       if (p->p_piece[c][i] != 0) {
+   *         tbassert(false, "foo");
+   *         return false;
+   *       }
+   *       continue;
+   *     }
+   *     if (p->board[p->ploc[c][i]] != p->p_piece[c][i]) {
+   *       tbassert(false, "foo");
+   *       return false;
+   *     }
+   *     if (ptype_of(p->p_piece[c][i]) != PAWN || color_of(p->p_piece[c][i]) != c) {
+   *       tbassert(false, "foo");
+   *       return false;
+   *     }
+   *   }
+   *   if (p->board[p->kloc[c]] != p->k_piece[c]) {
+   *     tbassert(false, "foo");
+   *     return false;
+   *   }
+   * } */
   return true;
 }
 
@@ -385,9 +385,6 @@ static inline void swap_positions(position_t * restrict old, position_t * restri
   p->ply = old->ply + 1;
   p->key = old->key;
 
-  for (int i = 0; i < ARR_SIZE; i++) {
-    p->board[i] = old->board[i];
-  }
   for (int i = 0; i < 2; i++) {
     p->kloc[i] = old->kloc[i];
     p->k_piece[i] = old->k_piece[i];
@@ -516,9 +513,6 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
     p->key ^= zob[from_sq][from_piece];  // remove from_piece from from_sq
     p->key ^= zob[to_sq][to_piece];  // remove to_piece from to_sq
 
-    p->board[to_sq] = from_piece;  // swap from_piece and to_piece on board
-    p->board[from_sq] = to_piece;
-
     p->key ^= zob[to_sq][from_piece];  // place from_piece in to_sq
     p->key ^= zob[from_sq][to_piece];  // place to_piece in from_sq
 
@@ -534,7 +528,6 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
     // remove from_piece from from_sq in hash
     p->key ^= zob[from_sq][from_piece];
     set_ori(&from_piece, rot + ori_of(from_piece));  // rotate from_piece
-    p->board[from_sq] = from_piece;  // place rotated piece on board
     if (from_type == PAWN) {
       for (int i = 0; i < HALF_NUM_PAWNS; i++) {
         if (p->ploc[from_color][i] == from_sq) {
@@ -624,7 +617,6 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
 
     p->key ^= zob[stomped_sq][p->victims.stomped];   // remove from board
     color_t color = color_of(get_piece(p, stomped_sq));
-    p->board[stomped_sq] = 0;
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
       if (stomped_sq == p->ploc[color][i]) {
         p->ploc[color][i] = 0;
@@ -665,7 +657,6 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->victims.zapped = get_piece(p, victim_sq);
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     remove_piece(p, victim_sq);
-    p->board[victim_sq] = 0;
 
     p->key ^= zob[victim_sq][0];
 
