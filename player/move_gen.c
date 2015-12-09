@@ -353,7 +353,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
 }
 
 inline void swap_positions(position_t * restrict old, position_t * restrict p) {
-  p->ply = old->ply;
+  p->ply = old->ply + 1;
   p->key = old->key;
 
   for (int i = 0; i < ARR_SIZE; i++) {
