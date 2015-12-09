@@ -716,7 +716,7 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
       np.victims.zapped = np.board[victim_sq];
       np.key ^= zob[victim_sq][np.victims.zapped];   // remove from board
       color_t color = color_of(p->board[victim_sq]);
-      for (int i = 0; i < p->ploc_dead_i[color] + 1; i++) {
+      for (int i = 0; i < np.ploc_dead_i[color] + 1; i++) {
         if (victim_sq == np.ploc[color][i]) {
           np.ploc[color][i] = np.ploc[color][np.ploc_dead_i[color]];
           np.ploc[color][np.ploc_dead_i[color]] = 0;

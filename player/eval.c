@@ -269,6 +269,9 @@ score_t eval(position_t *p, bool verbose) {
   for (int color = WHITE; color < 2; color++) {
     for (int i = 0; i < p->ploc_dead_i[color] + 1; i++) {
       square_t sq = p->ploc[color][i];
+      if (sq == 0) {
+        continue;
+      }
       bonus = PAWN_EV_VALUE;
       if (verbose) {
         printf("MATERIAL bonus %d for %s Pawn on %s\n", bonus, color_to_str(color), buf);
