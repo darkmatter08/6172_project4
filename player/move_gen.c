@@ -352,7 +352,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   return move_count;
 }
 
-inline void swap_positions(position_t * restrict old, position_t * restrict p) {
+static inline void swap_positions(position_t * restrict old, position_t * restrict p) {
   p->ply = old->ply + 1;
   p->key = old->key;
 
@@ -478,7 +478,6 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
           break;
         }
       }
-      tbassert(move_plist, "Should find a piece in the ploc that moved\n");
     }
 
     // Hash key updates
@@ -590,7 +589,6 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
         break;
       }
     }
-    tbassert(stomp_ploc, "Should find a piece in the ploc that is stomped\n");
     p->key ^= zob[stomped_sq][p->board[stomped_sq]];
 
     tbassert(p->key == compute_zob_key(p),
@@ -651,90 +649,9 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
   return p->victims;
 }
 
-// helper function for do_perft
-// ply starting with 0
-static uint64_t perft_search(position_t *p, int depth, int ply) {
-  uint64_t node_count = 0;
-  position_t np;
-  sortable_move_t lst[MAX_NUM_MOVES];
-  int num_moves;
-  int i;
-
-  if (depth == 0) {
-    return 1;
-  }
-
-  num_moves = generate_all_opt(p, lst, true);
-  tbassert(num_moves == generate_all(p, lst, true),
-           "move counts do not match");
-
-  if (depth == 1) {
-    return num_moves;
-  }
-
-  for (i = 0; i < num_moves; i++) {
-    move_t mv = get_move(lst[i]);
-
-    square_t stomped_sq = low_level_make_move(p, &np, mv);  // make the move baby!
-    color_t color = color_of(p->board[stomped_sq]);
-    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
-      if (stomped_sq == p->ploc[1-color][i]) {
-        p->ploc[1-color][i] = 0;
-        break;
-      }
-    }
-    tbassert(stomp_ploc, "Should find a piece in the ploc that is stomped in perft_search\n");
-
-    if (stomped_sq != 0) {
-      tbassert(ptype_of(np.board[stomped_sq]) == PAWN,
-               "ptype_of(np.board[stomped_sq]): %d\n",
-               ptype_of(np.board[stomped_sq]));
-
-      np.victims.stomped = np.board[stomped_sq];
-      np.key ^= zob[stomped_sq][np.victims.stomped];   // remove from board
-      np.board[stomped_sq] = 0;
-      np.key ^= zob[stomped_sq][0];
-    }
-
-    square_t victim_sq = fire(&np);  // the guy to disappear
-
-    if (victim_sq != 0) {            // hit a piece
-      ptype_t typ = ptype_of(np.board[victim_sq]);
-      tbassert((typ != EMPTY) && (typ != INVALID), "typ: %d\n", typ);
-      if (typ == KING) {  // do not expand further: hit a King
-        node_count++;
-        continue;
-      }
-      np.victims.zapped = np.board[victim_sq];
-      np.key ^= zob[victim_sq][np.victims.zapped];   // remove from board
-      color_t color = color_of(p->board[victim_sq]);
-      for (int i = 0; i < HALF_NUM_PAWNS; i++) {
-        if (victim_sq == np.ploc[color][i]) {
-          np.ploc[color][i] = 0;
-          break;
-        }
-      }
-
-      np.board[victim_sq] = 0;
-      np.key ^= zob[victim_sq][0];
-    }
-
-    uint64_t partialcount = perft_search(&np, depth-1, ply+1);
-    node_count += partialcount;
-  }
-
-  return node_count;
-}
-
 // help to verify the move generator
 void do_perft(position_t *gme, int depth, int ply) {
-  fen_to_pos(gme, "");
 
-  for (int d = 1; d <= depth; d++) {
-    printf("perft %2d ", d);
-    uint64_t j = perft_search(gme, d, 0);
-    printf("%" PRIu64 "\n", j);
-  }
 }
 
 void display(position_t *p) {
