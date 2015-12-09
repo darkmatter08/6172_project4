@@ -220,41 +220,20 @@ float h_dist(square_t sq, square_t b) {
 }
 
 // H_SQUARES_ATTACKABLE heuristic: for shooting the enemy king
-int h_squares_attackable_opt(position_t * restrict p, square_t o_king_sq, color_t c) {
+int h_squares_attackable_opt(position_t * restrict p, square_t o_king_sq, char * restrict laser_map) {
   float h_attackable = 0;
   // Fire laser, recording in laser_map
 
-  square_t sq = p->kloc[c];
-  int bdir = ori_of(get_piece(p, sq));
-  h_attackable += h_dist(o_king_sq, sq);
-
-  while (true) {
-    sq += beam_of(bdir);
-    tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
-
-    switch (ptype_of(get_piece(p, sq))) {
-      case EMPTY:  // empty square
+  for (fil_t f = 0; f < BOARD_WIDTH; f++) {
+    square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
+    for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
+      if (laser_map[sq] != 0) {
         h_attackable += h_dist(o_king_sq, sq);
-        break;
-      case PAWN:  // Pawn
-        bdir = reflect_of(bdir, ori_of(get_piece(p, sq)));
-        h_attackable += h_dist(o_king_sq, sq);
-        if (bdir < 0) {  // Hit back of Pawn
-          return h_attackable;
-        }
-        break;
-      case KING:  // King
-        h_attackable += h_dist(o_king_sq, sq);
-        return h_attackable;
-        break;
-      case INVALID:  // Ran off edge of board
-        return h_attackable;
-        break;
-      default:  // Shouldna happen, man!
-        tbassert(false, "Not cool, man.  Not cool.\n");
-        break;
+      }
     }
   }
+
+  return h_attackable;
 }
 
 // Static evaluation.  Returns score
@@ -330,8 +309,8 @@ score_t eval(position_t *p, bool verbose) {
   score[WHITE] += kaggressive_opt(p, wk_f, wk_r, delta_fil_b, delta_rnk_b);
   score[BLACK] += kaggressive_opt(p, bk_f, bk_r, delta_fil_w, delta_rnk_w);
 
-  score[WHITE] += HATTACK * h_squares_attackable_opt(p, bk, WHITE);
-  score[BLACK] += HATTACK * h_squares_attackable_opt(p, wk, BLACK);
+  score[WHITE] += HATTACK * h_squares_attackable_opt(p, bk, laser_map_white);
+  score[BLACK] += HATTACK * h_squares_attackable_opt(p, wk, laser_map_black);
 
   score[WHITE] += MOBILITY * mobility_opt(p, wk, laser_map_black);
   score[BLACK] += MOBILITY * mobility_opt(p, bk, laser_map_white);
