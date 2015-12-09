@@ -422,14 +422,14 @@ int fen_to_pos(position_t *p, char *fen) {
         // White to move
       case 'W':
       case 'w':
-        p->ply = 0;
+        p->color_to_move = WHITE;
         done = true;
         break;
 
         // Black to move
       case 'B':
       case 'b':
-        p->ply = 1;
+        p->color_to_move = BLACK;
         done = true;
         break;
 

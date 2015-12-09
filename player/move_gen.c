@@ -131,7 +131,7 @@ uint64_t compute_zob_key(position_t *p) {
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
     square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
     for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
-      key ^= zob[sq][get_piece(p, sq)];
+      key ^= zob[sq][get_piece_no_check(p, sq)];
     }
   }
   if (color_to_move_of(p) == BLACK)
@@ -320,9 +320,11 @@ int generate_all(position_t * restrict p, sortable_move_t * restrict sortable_mo
 int generate_king_moves(position_t *p, square_t sq, sortable_move_t *sortable_move_list, int move_count) {
   for (int d = 0; d < 8; d++) {
     int dest = sq + dir_of(d);
-    piece_t piece = get_piece(p, dest);
-    ptype_t typ = ptype_of(piece);
-    if (typ == EMPTY) {
+    if (!square_inbounds(dest)) {
+      continue;
+    }
+    piece_t piece = get_piece_no_check(p, dest);
+    if (piece == 0) {
       sortable_move_list[move_count++] = move_of(KING, (rot_t) 0, sq, dest);
     }
   }
@@ -347,7 +349,7 @@ int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *
     bool hits_same_pawn = false;
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
       if (dest == p->ploc[color_to_move_of(p)][i]) {
-        hits_same_pawn = false;
+        hits_same_pawn = true;
         break;
       }
     }
@@ -390,7 +392,7 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
 }
 
 static inline void swap_positions(position_t * restrict old, position_t * restrict p) {
-  p->ply = old->ply + 1;
+  p->color_to_move = opp_color(old->color_to_move);
   p->key = old->key;
 
   for (int i = 0; i < 2; i++) {
@@ -455,8 +457,7 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
       }
     });
 
-  *p = *old;
-  p->ply++;
+  swap_positions(old, p);
 
   p->history = old;
   p->last_move = mv;
@@ -470,9 +471,9 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
 
   p->key ^= zob_color;   // swap color to move
 
-  piece_t from_piece = get_piece(p, from_sq);
-  piece_t to_piece;
   color_t from_color = color_to_move_of(old);
+  piece_t from_piece = get_piece_with_color(p, from_color, from_sq);
+  piece_t to_piece;
   color_t to_color;
   if (to_sq == from_sq) {
     // rotation
@@ -631,7 +632,7 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     // Don't check for Ko yet.
 
   } else {  // we definitely stomped something
-    p->victims.stomped = get_piece(p, stomped_sq);
+    p->victims.stomped = get_piece_with_color(p, color_to_move_of(p), stomped_sq);
 
     p->key ^= zob[stomped_sq][p->victims.stomped];   // remove from board
     color_t color = color_to_move_of(p);
@@ -674,7 +675,7 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
       return KO();
     }
   } else {  // we definitely hit something with laser
-    p->victims.zapped = get_piece(p, victim_sq);
+    p->victims.zapped = get_piece_no_check(p, victim_sq);
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     remove_piece(p, victim_sq);
 
@@ -701,7 +702,6 @@ void do_perft(position_t *gme, int depth, int ply) {
 void display(position_t *p) {
   char buf[MAX_CHARS_IN_MOVE];
 
-  printf("\ninfo Ply: %d\n", p->ply);
   printf("info Color to move: %s\n", color_to_str(color_to_move_of(p)));
 
   square_to_str(p->kloc[WHITE], buf, MAX_CHARS_IN_MOVE);

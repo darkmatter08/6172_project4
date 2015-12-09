@@ -140,7 +140,7 @@ typedef struct victims_t {
 typedef struct position {
   struct position  *history;     // history of position
   uint64_t     key;              // hash key
-  uint16_t      ply;              // Even ply are White, odd are Black
+  color_t      color_to_move:1;
   move_t       last_move;        // move that led to this position
   victims_t    victims;          // pieces destroyed by shooter or stomper
   square_t     kloc[2];          // location of kings
@@ -150,11 +150,7 @@ typedef struct position {
 } position_t;
 
 static inline color_t color_to_move_of(position_t *p) {
-  if ((p->ply & 1) == 0) {
-    return WHITE;
-  } else {
-    return BLACK;
-  }
+  return p->color_to_move;
 }
 
 static inline color_t color_of(piece_t x) {
@@ -235,11 +231,7 @@ static inline rnk_t rnk_of(square_t sq) {
   return r;
 }
 
-static inline piece_t get_piece(position_t *p, square_t sq) {
-  if (rnk_of(sq) < 0 || rnk_of(sq) >= BOARD_WIDTH ||
-      fil_of(sq) < 0 || fil_of(sq) >= BOARD_WIDTH) {
-    return 0x1C;
-  }
+static inline piece_t get_piece_no_check(position_t *p, square_t sq) {
   for (color_t c = 0; c < 2; c++) {
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
       if (p->ploc[c][i] == sq) {
@@ -251,6 +243,15 @@ static inline piece_t get_piece(position_t *p, square_t sq) {
     }
   }
   return 0;
+  /* return p->board[sq]; */
+}
+
+static inline piece_t get_piece(position_t *p, square_t sq) {
+  if (rnk_of(sq) < 0 || rnk_of(sq) >= BOARD_WIDTH ||
+      fil_of(sq) < 0 || fil_of(sq) >= BOARD_WIDTH) {
+    return 0x1C;
+  }
+  return get_piece_no_check(p, sq);
   /* return p->board[sq]; */
 }
 
