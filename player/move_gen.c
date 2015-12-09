@@ -341,9 +341,17 @@ int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *
 
   for (int d = 0; d < 8; d++) {
     int dest = sq + dir_of(d);
-    piece_t piece = get_piece(p, dest);
-    ptype_t typ = ptype_of(piece);
-    if (typ == EMPTY || (typ == PAWN && color_of(piece) != c)) {
+    if (!square_inbounds(dest)) {
+      continue;
+    }
+    bool hits_same_pawn = false;
+    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+      if (dest == p->ploc[color_to_move_of(p)][i]) {
+        hits_same_pawn = false;
+        break;
+      }
+    }
+    if (!hits_same_pawn && dest != p->kloc[WHITE] && dest != p->kloc[BLACK]) {
       sortable_move_list[move_count++] = move_of(PAWN, (rot_t) 0, sq, dest);
     }
   }
@@ -447,7 +455,8 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
       }
     });
 
-  swap_positions(old, p);
+  *p = *old;
+  p->ply++;
 
   p->history = old;
   p->last_move = mv;
@@ -462,11 +471,20 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
   p->key ^= zob_color;   // swap color to move
 
   piece_t from_piece = get_piece(p, from_sq);
-  piece_t to_piece = get_piece(p, to_sq);
+  piece_t to_piece;
+  color_t from_color = color_to_move_of(old);
+  color_t to_color;
+  if (to_sq == from_sq) {
+    // rotation
+    to_piece = from_piece;
+    to_color = from_color;
+  } else {
+    // moved
+    to_color = opp_color(from_color);
+    to_piece = get_piece_with_color(p, to_color, to_sq);
+  }
   ptype_t from_type = ptype_of(from_piece);
   ptype_t to_type = ptype_of(to_piece);
-  color_t from_color = color_of(from_piece);
-  color_t to_color = color_of(to_piece);
 
   // Pieces block each other, unless a pawn is stomping an enemy pawn
   tbassert(EMPTY == ptype_of(to_piece) ||
@@ -558,7 +576,7 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
 square_t fire(position_t *p) {
   color_t fake_color_to_move = (color_to_move_of(p) == WHITE) ? BLACK : WHITE;
   square_t sq = p->kloc[fake_color_to_move];
-  int bdir = ori_of(get_piece(p, sq));
+  int bdir = ori_of(p->k_piece[fake_color_to_move]);
 
   tbassert(ptype_of(get_piece(p, p->kloc[fake_color_to_move])) == KING,
            "ptype_of(get_piece(p, p->kloc[fake_color_to_move])): %d\n",
@@ -616,15 +634,17 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     p->victims.stomped = get_piece(p, stomped_sq);
 
     p->key ^= zob[stomped_sq][p->victims.stomped];   // remove from board
-    color_t color = color_of(get_piece(p, stomped_sq));
+    color_t color = color_to_move_of(p);
+    piece_t stomped_piece = 0;
     for (int i = 0; i < HALF_NUM_PAWNS; i++) {
       if (stomped_sq == p->ploc[color][i]) {
+        stomped_piece = p->p_piece[color][i];
         p->ploc[color][i] = 0;
         p->p_piece[color][i] = 0;
         break;
       }
     }
-    p->key ^= zob[stomped_sq][get_piece(p, stomped_sq)];
+    p->key ^= zob[stomped_sq][stomped_piece];
 
     tbassert(p->key == compute_zob_key(p),
              "p->key: %"PRIu64", zob-key: %"PRIu64"\n",

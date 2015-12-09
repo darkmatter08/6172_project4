@@ -254,6 +254,18 @@ static inline piece_t get_piece(position_t *p, square_t sq) {
   /* return p->board[sq]; */
 }
 
+static inline piece_t get_piece_with_color(position_t *p, color_t c, square_t sq) {
+  for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+    if (p->ploc[c][i] == sq) {
+      return p->p_piece[c][i];
+    }
+  }
+  if (p->kloc[c] == sq) {
+    return p->k_piece[c];
+  }
+  return 0;
+}
+
 // removes a piece from both from both the *loc and *_piece arrays
 // used for zapping. Does not assume anything about the color or
 // type of the piece at sq. assumes sq is on the board
@@ -272,6 +284,11 @@ static inline void remove_piece(position_t *p, square_t sq) {
     }
   }
   tbassert(false, "did not find square that should have been zapped\n");
+}
+
+static inline bool square_inbounds(square_t sq) {
+  return (rnk_of(sq) >= 0 && rnk_of(sq) < BOARD_WIDTH &&
+          fil_of(sq) >= 0 && fil_of(sq) < BOARD_WIDTH);
 }
 
 // -----------------------------------------------------------------------------
