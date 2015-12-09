@@ -145,7 +145,9 @@ typedef struct position {
   move_t       last_move;        // move that led to this position
   victims_t    victims;          // pieces destroyed by shooter or stomper
   square_t     kloc[2];          // location of kings
+  piece_t      k_piece[2];
   square_t     ploc[2][HALF_NUM_PAWNS]; // locations of pawns
+  piece_t      p_piece[2][HALF_NUM_PAWNS];
 } position_t;
 
 static inline color_t color_to_move_of(position_t *p) {
@@ -234,6 +236,46 @@ static inline rnk_t rnk_of(square_t sq) {
   return r;
 }
 
+static inline piece_t get_piece(position_t *p, square_t sq) {
+  /* if (rnk_of(sq) < 0 || rnk_of(sq) >= BOARD_WIDTH ||
+   *     fil_of(sq) < 0 || fil_of(sq) >= BOARD_WIDTH) {
+   *   return p->board[sq];
+   *   return 0x1C;
+   * }
+   * for (color_t c = 0; c < 2; c++) {
+   *   for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+   *     if (p->ploc[c][i] == sq) {
+   *       return p->p_piece[c][i];
+   *     }
+   *   }
+   *   if (p->kloc[c] == sq) {
+   *     return p->k_piece[c];
+   *   }
+   * }
+   * return p->board[sq];
+   * return 0; */
+  return p->board[sq];
+}
+
+// removes a piece from both from both the *loc and *_piece arrays
+// used for zapping. Does not assume anything about the color or
+// type of the piece at sq. assumes sq is on the board
+static inline void remove_piece(position_t *p, square_t sq) {
+  for (color_t c = 0; c < 2; c++) {
+    for (int i = 0; i < HALF_NUM_PAWNS; i++) {
+      if (p->ploc[c][i] == sq) {
+        p->ploc[c][i] = 0;
+        p->p_piece[c][i] = 0;
+        return;
+      }
+      if (p->kloc[c] == sq) {
+        p->k_piece[c] = 0;
+        return;
+      }
+    }
+  }
+  tbassert(false, "did not find square that should have been zapped\n");
+}
 
 // -----------------------------------------------------------------------------
 // Function prototypes
@@ -241,6 +283,7 @@ static inline rnk_t rnk_of(square_t sq) {
 
 int check_position_integrity(position_t *p);
 int check_pawn_counts(position_t *p);
+bool check_piece_lists(position_t *p);
 char *color_to_str(color_t c);
 void init_zob();
 int square_to_str(square_t sq, char *buf, size_t bufsize);
