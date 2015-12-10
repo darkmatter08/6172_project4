@@ -200,9 +200,16 @@ int generate_all(position_t * restrict p, sortable_move_t * restrict sortable_mo
                  bool strict) {
   color_t color_to_move = color_to_move_of(p);
   // Make sure that the enemy_laser map is marked
-  char laser_map[ARR_SIZE];
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map[i] = 4;   // Invalid square
+  // char laser_map[ARR_SIZE];
+  // for (int i = 0; i < ARR_SIZE; ++i) {
+  //   laser_map[i] = 4;   // Invalid square
+  // }
+  int16_t laser_map[ARR_WIDTH];
+  // initialize laser map
+  laser_map[0] = 0xFFFF;
+  laser_map[ARR_WIDTH-1] = 0xFFFF;
+  for (int i = 1; i < ARR_WIDTH-1; i++) {
+    laser_map[i] = 0xF801;
   }
   mark_laser_path(p, laser_map, opp_color(color_to_move));
 
@@ -220,7 +227,7 @@ int generate_all(position_t * restrict p, sortable_move_t * restrict sortable_mo
         case EMPTY:
           break;
         case PAWN:
-          if (laser_map[sq] == 1) continue;  // Piece is pinned down by laser.
+          if (get_lasermap_pos(laser_map, sq) == 1) continue;  // Piece is pinned down by laser.
         case KING:
           if (color != color_to_move) {  // Wrong color
             break;
@@ -300,8 +307,8 @@ int generate_king_moves(position_t *p, square_t sq, sortable_move_t *sortable_mo
   return move_count;
 }
 
-int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *sortable_move_list, int move_count, char *laser_map) {
-  if (laser_map[sq] == 1) {
+int generate_pawn_moves(position_t *p, square_t sq, color_t c, sortable_move_t *sortable_move_list, int move_count, int16_t* laser_map) {
+  if (get_lasermap_pos(laser_map, sq) == 1) {
     return move_count;
   }
 
@@ -327,9 +334,12 @@ int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
   color_t color_to_move = color_to_move_of(p);
   // Make sure that the enemy_laser map is marked
 
-  char laser_map[ARR_SIZE];
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map[i] = 4;   // Invalid square
+  int16_t laser_map[ARR_WIDTH];
+  // initialize laser map
+  laser_map[0] = 0xFFFF;
+  laser_map[ARR_WIDTH-1] = 0xFFFF;
+  for (int i = 1; i < ARR_WIDTH-1; i++) {
+    laser_map[i] = 0xF801;
   }
   mark_laser_path(p, laser_map, opp_color(color_to_move));
 

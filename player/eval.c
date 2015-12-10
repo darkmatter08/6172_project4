@@ -127,6 +127,23 @@ ev_score_t kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int d
   return (KAGGRESSIVE * bonus) / (BOARD_WIDTH * BOARD_WIDTH);
 }
 
+bool get_lasermap_pos(int16_t* restrict laser_map, square_t sq) {
+  int16_t col = laser_map[FIL_ORIGIN+fil_of(sq)];
+  printf("column: %d, value of col: 0x%X", FIL_ORIGIN+fil_of(sq), col);
+  // from http://www.catonmat.net/blog/low-level-bit-hacks-you-absolutely-must-know/
+  return (bool) (col & (1<<(FIL_ORIGIN+rnk_of(sq))));
+}
+
+static inline void set_lasermap_pos(int16_t* restrict laser_map, square_t sq, bool value) {
+  int16_t* col = &laser_map[FIL_ORIGIN+fil_of(sq)];
+  // from http://www.catonmat.net/blog/low-level-bit-hacks-you-absolutely-must-know/
+  printf("column: %d, value of col: 0x%X", FIL_ORIGIN+fil_of(sq), *col);
+  if (value) // set the bit
+    *col |= (1<<(RNK_ORIGIN+rnk_of(sq)));
+  else // unset the bit
+    *col &= ~(1<<(RNK_ORIGIN+rnk_of(sq)));
+}
+
 // Marks the path of the laser until it hits a piece or goes off the board.
 //
 // p : current board state
@@ -134,13 +151,13 @@ ev_score_t kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int d
 //             path of the laser is marked with mark_mask
 // c : color of king shooting laser
 // mark_mask: what each square is marked with
-void mark_laser_path(position_t * restrict p, char * restrict laser_map, color_t c) {
-  for (int i = 0; i < BOARD_WIDTH; i++) {
-    int k = (FIL_ORIGIN + i) * ARR_WIDTH + RNK_ORIGIN;
-    for (int j = 0; j < BOARD_WIDTH; j++, k++) {
-      laser_map[k] = 0;
-    }
-  }
+void mark_laser_path(position_t * restrict p, int16_t* restrict laser_map, color_t c) {
+  // for (int i = 0; i < BOARD_WIDTH; i++) {
+  //   int k = (FIL_ORIGIN + i) * ARR_WIDTH + RNK_ORIGIN;
+  //   for (int j = 0; j < BOARD_WIDTH; j++, k++) {
+  //     laser_map[k] = 0;
+  //   }
+  // }
 
   // Fire laser, recording in laser_map
   square_t sq = p->kloc[c];
@@ -148,11 +165,11 @@ void mark_laser_path(position_t * restrict p, char * restrict laser_map, color_t
 
   tbassert(ptype_of(p->board[sq]) == KING,
            "ptype: %d\n", ptype_of(p->board[sq]));
-  laser_map[sq] |= 1;
+  set_lasermap_pos(laser_map, sq, 1);// laser_map[sq] |= 1;
 
   while (true) {
     sq += beam_of(bdir);
-    laser_map[sq] |= 1;
+    set_lasermap_pos(laser_map, sq, 1);//laser_map[sq] |= 1;
     tbassert(sq < ARR_SIZE && sq >= 0, "sq: %d\n", sq);
 
     switch (ptype_of(p->board[sq])) {
@@ -180,7 +197,7 @@ void mark_laser_path(position_t * restrict p, char * restrict laser_map, color_t
 // PAWNPIN Heuristic: count number of pawns that are pinned by the
 //   opposing king's laser --- and are thus immobile.
 
-int pawnpin(position_t * restrict p, color_t color, char * restrict opposite_color_laser_map) {
+int pawnpin(position_t * restrict p, color_t color, int16_t* restrict opposite_color_laser_map) {
   int pinned_pawns = 0;
 
   // Figure out which pawns are not pinned down by the laser.
@@ -190,7 +207,7 @@ int pawnpin(position_t * restrict p, color_t color, char * restrict opposite_col
     if (sq == 0) {
       continue;
     }
-    if (opposite_color_laser_map[sq] == 0 &&
+    if (get_lasermap_pos(opposite_color_laser_map, sq) == 0 &&
         color_of(p->board[sq]) == color) {
       pinned_pawns += 1;
     }
@@ -200,14 +217,14 @@ int pawnpin(position_t * restrict p, color_t color, char * restrict opposite_col
 }
 
 // MOBILITY heuristic: safe squares around king of color color.
-int mobility_opt(position_t * restrict p, square_t king_sq, char * restrict opposite_color_laser_map) {
+int mobility_opt(position_t * restrict p, square_t king_sq, int16_t* restrict opposite_color_laser_map) {
   int mobility = 0;
-  if (opposite_color_laser_map[king_sq] == 0) {
+  if (get_lasermap_pos(opposite_color_laser_map, king_sq) == 0) {//opposite_color_laser_map[king_sq] == 0) {
     mobility++;
   }
   for (int d = 0; d < 8; ++d) {
     square_t sq = king_sq + dir_of(d);
-    if (opposite_color_laser_map[sq] == 0) {
+    if (get_lasermap_pos(opposite_color_laser_map, sq) == 0) {
       mobility++;
     }
   }
@@ -300,13 +317,38 @@ score_t eval(position_t *p, bool verbose) {
     score[c] += bonus;
   }
 
-  char laser_map_black[ARR_SIZE];
-  char laser_map_white[ARR_SIZE];
+  // bitmaps of laser map. Each int16_t is a (too big) row
+  // 2 extra squares on either side that are invalid.
+  // MSB 2 bits are invalid also (off board)
+  int16_t laser_map_black[ARR_WIDTH];
+  int16_t laser_map_white[ARR_WIDTH];
 
-  for (int i = 0; i < ARR_SIZE; ++i) {
-    laser_map_black[i] = 4;   // Invalid square
-    laser_map_white[i] = 4;   // Invalid square
+  // for (int i = 0; i < ARR_SIZE; ++i) {
+  //   laser_map_black[i] = 4;   // Invalid square
+  //   laser_map_white[i] = 4;   // Invalid square
+  // }
+
+  // for (int i = 0; i < BOARD_WIDTH; i++) {
+  //   int k = (FIL_ORIGIN + i) * ARR_WIDTH + RNK_ORIGIN;
+  //   for (int j = 0; j < BOARD_WIDTH; j++, k++) {
+  //     laser_map[k] = 0;
+  //   }
+  // }
+
+  // init with pattern:
+  // {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1} = 0xF801
+  // LSB               --->                       MSB???
+
+  // first and last col is all 1's
+  laser_map_white[0] = 0xFFFF;
+  laser_map_white[ARR_WIDTH-1] = 0xFFFF;
+  laser_map_black[0] = 0xFFFF;
+  laser_map_black[ARR_WIDTH-1] = 0xFFFF;
+  for (int i = 1; i < ARR_WIDTH-1; i++) {
+    laser_map_white[i] = 0xF801;
+    laser_map_black[i] = 0xF801;
   }
+
   mark_laser_path(p, laser_map_white, WHITE);
   mark_laser_path(p, laser_map_black, BLACK);
 
