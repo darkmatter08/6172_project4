@@ -132,15 +132,20 @@ static score_t scout_search(searchNode *node, int depth,
   }
 
   if (!node->abort) {
+    // sort rest of the array, not sort_incremental
+    // sort_incremental(move_list, num_of_moves, number_of_moves_evaluated); //possible race
+    ref_sort_full(move_list, num_of_moves); // point to bound-th entry in move_list since others are already checked.
     cilk_for (int mv_index = BEST_MOVE_HEADER; mv_index < num_of_moves; mv_index++) {
       do {
         if (node->abort) continue;
+        // check parent's abort
+        // propogate abort information - parallel_parent_aborted
         
-        simple_acquire(&node_mutex);
+        // simple_acquire(&node_mutex);
         // Sort up to number_of_moves_evaluated
-        sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
-        int local_index = number_of_moves_evaluated++;
-        simple_release(&node_mutex);
+        // int local_index = number_of_moves_evaluated++; // check equivilance
+        int local_index = __sync_fetch_and_add(&number_of_moves_evaluated, 1);
+        // simple_release(&node_mutex);
 
         // Get the next move from the move list.
         move_t mv = get_move(move_list[local_index]);
