@@ -8,5 +8,6 @@ then
 fi
 
 cd player/; make clean; make DEBUG=1; cd ../;
+cd stable; make clean; make DEBUG=1; cd ../;
 
 ./run_tests.py player/leiserchess my_tests/ $aws

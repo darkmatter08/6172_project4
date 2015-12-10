@@ -737,8 +737,6 @@ static uint64_t perft_search(position_t *p, int depth, int ply) {
   }
 
   num_moves = generate_all_opt(p, lst, true);
-  tbassert(num_moves == generate_all(p, lst, true),
-           "move counts do not match");
 
   if (depth == 1) {
     return num_moves;
