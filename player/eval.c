@@ -129,7 +129,7 @@ ev_score_t kaggressive_opt(position_t *p, fil_t f, rnk_t r, int delta_fil, int d
 
 bool get_lasermap_pos(int16_t* restrict laser_map, square_t sq) {
   int16_t col = laser_map[FIL_ORIGIN+fil_of(sq)];
-  printf("column: %d, value of col: 0x%X", FIL_ORIGIN+fil_of(sq), col);
+  printf("column: %d, value of col: 0x%X\n", FIL_ORIGIN+fil_of(sq), col);
   // from http://www.catonmat.net/blog/low-level-bit-hacks-you-absolutely-must-know/
   return (bool) (col & (1<<(FIL_ORIGIN+rnk_of(sq))));
 }
@@ -137,7 +137,7 @@ bool get_lasermap_pos(int16_t* restrict laser_map, square_t sq) {
 static inline void set_lasermap_pos(int16_t* restrict laser_map, square_t sq, bool value) {
   int16_t* col = &laser_map[FIL_ORIGIN+fil_of(sq)];
   // from http://www.catonmat.net/blog/low-level-bit-hacks-you-absolutely-must-know/
-  printf("column: %d, value of col: 0x%X", FIL_ORIGIN+fil_of(sq), *col);
+  printf("column: %d, value of col: 0x%X\n", FIL_ORIGIN+fil_of(sq), *col);
   if (value) // set the bit
     *col |= (1<<(RNK_ORIGIN+rnk_of(sq)));
   else // unset the bit
