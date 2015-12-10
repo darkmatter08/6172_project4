@@ -353,24 +353,34 @@ int fen_to_pos(position_t *p, char *fen) {
   // King check
 
   int Kings[2] = {0, 0};
-  int pawn_index = 0;
+  int pawn_indices[2] = {0, 0};
   for (fil_t f = 0; f < BOARD_WIDTH; f++) {
     square_t sq = (FIL_ORIGIN + f) * ARR_WIDTH + RNK_ORIGIN;
     for (rnk_t r = 0; r < BOARD_WIDTH; r++, sq++) {
       piece_t x = p->board[sq];
       ptype_t typ = ptype_of(x);
+      color_t color = color_of(x);
       if (typ == KING) {
-        Kings[color_of(x)]++;
-        p->kloc[color_of(x)] = sq;
+        Kings[color]++;
+        p->kloc[color] = sq;
       } else if (typ == PAWN) {
-        p->ploc[pawn_index] = sq;
-        pawn_index++;
+        p->ploc[color][pawn_indices[color]] = sq;
+        pawn_indices[color]++;
       }
     }
   }
 
-  for (; pawn_index < NUM_PAWNS; pawn_index++) {
-    p->ploc[pawn_index] = 0;
+  p->ploc_dead_i[WHITE] = pawn_indices[WHITE] - 1;
+  p->ploc_dead_i[BLACK] = pawn_indices[BLACK] - 1;
+
+  int white_pawn_index = pawn_indices[WHITE];
+  for (; white_pawn_index < HALF_NUM_PAWNS; white_pawn_index++) {
+    p->ploc[WHITE][white_pawn_index] = 0;
+  }
+
+  int black_pawn_index = pawn_indices[BLACK];
+  for (; black_pawn_index < HALF_NUM_PAWNS; black_pawn_index++) {
+    p->ploc[BLACK][black_pawn_index] = 0;
   }
 
   tbassert(check_position_integrity(p), "pawn positions incorrect");

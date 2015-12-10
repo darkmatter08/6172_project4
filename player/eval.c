@@ -184,14 +184,10 @@ int pawnpin(position_t * restrict p, color_t color, char * restrict opposite_col
   int pinned_pawns = 0;
 
   // Figure out which pawns are not pinned down by the laser.
-  for (int i = 0; i < NUM_PAWNS; i++) {
-
-    square_t sq = p->ploc[i];
-    if (sq == 0) {
-      continue;
-    }
-    if (opposite_color_laser_map[sq] == 0 &&
-        color_of(p->board[sq]) == color) {
+  for (int i = 0; i < p->ploc_dead_i[color] + 1; i++) {
+    square_t sq = p->ploc[color][i];
+    tbassert(color_of(p->board[sq]) == color, "Iterating through a color should all be the right ones\n");
+    if (opposite_color_laser_map[sq] == 0) {
       pinned_pawns += 1;
     }
   }
@@ -270,34 +266,34 @@ score_t eval(position_t *p, bool verbose) {
   ev_score_t bonus;
   char buf[MAX_CHARS_IN_MOVE];
 
-  for (int i = 0; i < NUM_PAWNS; i++) {
-    square_t sq = p->ploc[i];
-    if (sq == 0) {
-      continue;
-    }
-    piece_t x = p->board[sq];
-    color_t c = color_of(x);
-    bonus = PAWN_EV_VALUE;
-    if (verbose) {
-      printf("MATERIAL bonus %d for %s Pawn on %s\n", bonus, color_to_str(c), buf);
-    }
-    score[c] += bonus;
+  for (int color = WHITE; color < 2; color++) {
+    for (int i = 0; i < p->ploc_dead_i[color] + 1; i++) {
+      square_t sq = p->ploc[color][i];
+      if (sq == 0) {
+        continue;
+      }
+      bonus = PAWN_EV_VALUE;
+      if (verbose) {
+        printf("MATERIAL bonus %d for %s Pawn on %s\n", bonus, color_to_str(color), buf);
+      }
+      score[color] += bonus;
 
-    // PBETWEEN heuristic
-    fil_t f = fil_of(sq);
-    rnk_t r = rnk_of(sq);
-    bonus = pbetween(p, f, r);
-    if (verbose) {
-      printf("PBETWEEN bonus %d for %s Pawn on %s\n", bonus, color_to_str(c), buf);
-    }
-    score[c] += bonus;
+      // PBETWEEN heuristic
+      fil_t f = fil_of(sq);
+      rnk_t r = rnk_of(sq);
+      bonus = pbetween(p, f, r);
+      if (verbose) {
+        printf("PBETWEEN bonus %d for %s Pawn on %s\n", bonus, color_to_str(color), buf);
+      }
+      score[color] += bonus;
 
-    // PCENTRAL heuristic
-    bonus = pcentral(f, r);
-    if (verbose) {
-      printf("PCENTRAL bonus %d for %s Pawn on %s\n", bonus, color_to_str(c), buf);
+      // PCENTRAL heuristic
+      bonus = pcentral(f, r);
+      if (verbose) {
+        printf("PCENTRAL bonus %d for %s Pawn on %s\n", bonus, color_to_str(color), buf);
+      }
+      score[color] += bonus;
     }
-    score[c] += bonus;
   }
 
   char laser_map_black[ARR_SIZE];
