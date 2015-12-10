@@ -153,10 +153,11 @@ static score_t searchPV(searchNode *node, int depth, uint64_t *node_count_serial
     (*node_count_serial)++;
 
     moveEvaluationResult result;
-    evaluateMove(node, mv, killer_a, killer_b,
-                 SEARCH_PV,
-                 node_count_serial,
-                 &result);
+    evaluateMoveAndUnmake(node, mv, killer_a, killer_b,
+                          SEARCH_PV,
+                          node_count_serial,
+                          &result,
+                          &(node->position));
 
     if (result.type == MOVE_ILLEGAL || result.type == MOVE_IGNORE) {
       continue;
@@ -257,8 +258,12 @@ score_t searchRoot(position_t *p, score_t alpha, score_t beta, int depth,
 
     (*node_count_serial)++;
 
+    next_node.position = rootNode.position;
+
     // make the move.
-    victims_t x = make_move(&(rootNode.position), &(next_node.position), mv);
+    victims_t x = make_move(&(next_node.position), mv);
+
+    next_node.position.history = &(rootNode.position);
 
     if (is_KO(x)) {
       continue;  // not a legal move

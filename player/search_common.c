@@ -243,24 +243,29 @@ leafEvalResult evaluate_as_leaf(searchNode *node, searchType_t type) {
 }
 
 // Evaluate the move by performing a search.
-void evaluateMove(searchNode *node, move_t mv, move_t killer_a,
-                                  move_t killer_b, searchType_t type,
-                                  uint64_t *node_count_serial,
-                                  moveEvaluationResult *result) {
+victims_t evaluateMove(searchNode *node, move_t mv, move_t killer_a,
+                       move_t killer_b, searchType_t type,
+                       uint64_t *node_count_serial,
+                       moveEvaluationResult *result,
+                       position_t *p) {
   int ext = 0;  // extensions
   bool blunder = false;  // shoot our own piece
   result->next_node.subpv[0] = 0;
   result->next_node.parent = node;
 
+  result->next_node.position.history = &(node->position);
+
   // Make the move, and get any victim pieces.
-  victims_t victims = make_move(&(node->position), &(result->next_node.position),
-                                mv);
+  victims_t victims = make_move(p, mv);
+
+  result->next_node.position.key = p->key;
+  result->next_node.position.victims = victims;
 
   // Check whether this move changes the board state.
   //   such moves are not legal.
   if (is_KO(victims)) {
     result->type = MOVE_ILLEGAL;
-    return;
+    return victims;
   }
 
   // Check whether the game is over.
@@ -268,20 +273,20 @@ void evaluateMove(searchNode *node, move_t mv, move_t killer_a,
     // Compute the end-game score.
     result->type = MOVE_GAMEOVER;
     result->score = get_game_over_score(victims, node->pov, node->ply);
-    return;
+    return victims;
   }
 
   // Ignore noncapture moves when in quiescence.
   if (zero_victims(victims) && node->quiescence) {
     result->type = MOVE_IGNORE;
-    return;
+    return victims;
   }
 
   // Check whether the board state has been repeated, this results in a draw.
   if (is_repeated(&(result->next_node.position), node->ply)) {
     result->type = MOVE_GAMEOVER;
     result->score = get_draw_score(&(result->next_node.position), node->ply);
-    return;
+    return victims;
   }
 
   tbassert(victims.stomped == 0
@@ -302,7 +307,7 @@ void evaluateMove(searchNode *node, move_t mv, move_t killer_a,
   // Do not consider moves that are blunders while in quiescence.
   if (node->quiescence && blunder) {
     result->type = MOVE_IGNORE;
-    return;
+    return victims;
   }
 
   // Extend the search-depth by 1 if we captured a piece, since that means the
@@ -335,7 +340,7 @@ void evaluateMove(searchNode *node, move_t mv, move_t killer_a,
                                             node_count_serial);
     if (reduced_depth_score < node->beta) {
       result->score = reduced_depth_score;
-      return;
+      return victims;
     }
     search_depth += next_reduction;
   }
@@ -344,7 +349,7 @@ void evaluateMove(searchNode *node, move_t mv, move_t killer_a,
   if (abortf) {
     result->score = 0;
     result->type = MOVE_IGNORE;
-    return;
+    return victims;
   }
 
 
@@ -363,8 +368,20 @@ void evaluateMove(searchNode *node, move_t mv, move_t killer_a,
     }
   }
 
-  return;
+  return victims;
 }
+
+
+void evaluateMoveAndUnmake(searchNode *node, move_t mv, move_t killer_a,
+                           move_t killer_b, searchType_t type,
+                           uint64_t *node_count_serial,
+                           moveEvaluationResult *result,
+                           position_t *p) {
+  victims_t parent_victims = node->position.victims;
+  victims_t victims = evaluateMove(node, mv, killer_a, killer_b, type, node_count_serial, result, p);
+  unmake_move(p, mv, victims, parent_victims);
+}
+
 
 // Incremental sort of the move list.
 void sort_incremental(sortable_move_t *move_list, int num_of_moves, int mv_index) {
@@ -462,5 +479,3 @@ static int get_sortable_move_list(searchNode *node, sortable_move_t * move_list,
   }
   return num_of_moves;
 }
-
-

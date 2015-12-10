@@ -91,7 +91,7 @@ static score_t scout_search(searchNode *node, int depth,
   // A simple mutex. See simple_mutex.h for implementation details.
   simple_mutex_t node_mutex;
   init_simple_mutex(&node_mutex);
- 
+
   int bound = BEST_MOVE_HEADER < num_of_moves ? BEST_MOVE_HEADER : num_of_moves;
   for (int mv_index = 0; mv_index < bound; mv_index++) {
     // Sort up to number_of_moves_evaluated
@@ -109,9 +109,9 @@ static score_t scout_search(searchNode *node, int depth,
     __sync_fetch_and_add(node_count_serial, 1);
 
     moveEvaluationResult result;
-    evaluateMove(node, mv, killer_a, killer_b,
-                 SEARCH_SCOUT,
-                 node_count_serial, &result);
+    evaluateMoveAndUnmake(node, mv, killer_a, killer_b,
+                          SEARCH_SCOUT,
+                          node_count_serial, &result, &(node->position));
 
     if (result.type == MOVE_ILLEGAL || result.type == MOVE_IGNORE
         || abortf || parallel_parent_aborted(node)) {
@@ -132,10 +132,10 @@ static score_t scout_search(searchNode *node, int depth,
   }
 
   if (!node->abort) {
-    cilk_for (int mv_index = BEST_MOVE_HEADER; mv_index < num_of_moves; mv_index++) {
+    for (int mv_index = BEST_MOVE_HEADER; mv_index < num_of_moves; mv_index++) {
       do {
         if (node->abort) continue;
-        
+
         simple_acquire(&node_mutex);
         // Sort up to number_of_moves_evaluated
         sort_incremental(move_list, num_of_moves, number_of_moves_evaluated);
@@ -153,10 +153,11 @@ static score_t scout_search(searchNode *node, int depth,
         __sync_fetch_and_add(node_count_serial, 1);
 
         moveEvaluationResult result;
-        evaluateMove(node, mv, killer_a, killer_b,
+        evaluateMoveAndUnmake(node, mv, killer_a, killer_b,
                      SEARCH_SCOUT,
                      node_count_serial,
-                     &result);
+                     &result,
+                     &(node->position));
 
         if (result.type == MOVE_ILLEGAL || result.type == MOVE_IGNORE
             || abortf || parallel_parent_aborted(node)) {
@@ -197,5 +198,3 @@ static score_t scout_search(searchNode *node, int depth,
 
   return node->best_score;
 }
-
-
