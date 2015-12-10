@@ -293,7 +293,7 @@ int mobility_opt(position_t *p, square_t king_sq, char opposite_color_laser_map[
   }
   for (int d = 0; d < 8; ++d) {
     square_t sq = king_sq + dir_of(d);
-    if (opposite_color_laser_map[sq] == 0) {
+    if (opposite_color_laser_map[sq] == 0  && ptype_of(p->board[sq]) == 0) {
       mobility++;
     }
   }
