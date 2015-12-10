@@ -122,6 +122,8 @@ typedef enum {
 typedef struct victims_t {
   piece_t stomped;
   piece_t zapped;
+  square_t stomped_sq;
+  square_t zapped_sq;
 } victims_t;
 
 // returned by make move in illegal situation
@@ -140,7 +142,6 @@ typedef struct position {
   struct position  *history;     // history of position
   uint64_t     key;              // hash key
   uint16_t      ply;              // Even ply are White, odd are Black
-  move_t       last_move;        // move that led to this position
   victims_t    victims;          // pieces destroyed by shooter or stomper
   square_t     kloc[2];          // location of kings
   square_t     ploc[NUM_PAWNS];
@@ -251,8 +252,9 @@ int generate_all(position_t *p, sortable_move_t *sortable_move_list,
 int generate_all_opt(position_t *p, sortable_move_t *sortable_move_list,
                  bool strict);
 void do_perft(position_t *gme, int depth, int ply);
-square_t low_level_make_move(position_t *old, position_t *p, move_t mv);
-victims_t make_move(position_t *old, position_t *p, move_t mv);
+square_t low_level_make_move(position_t *p, move_t mv);
+victims_t make_move(position_t *p, move_t mv);
+void unmake_move(position_t *p, move_t mv, victims_t victims, victims_t parent_victims);
 void display(position_t *p);
 uint64_t compute_zob_key(position_t *p);
 
@@ -265,5 +267,7 @@ bool zero_victims(victims_t victims);
 bool victim_exists(victims_t victims);
 
 void mark_laser_path(position_t * restrict p, char * restrict, color_t c);
+
+bool positions_equal(position_t *p1, position_t *p2);
 
 #endif  // MOVE_GEN_H

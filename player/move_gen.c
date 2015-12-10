@@ -73,6 +73,77 @@ int check_pawn_counts(position_t *p) {
   return 0;
 }
 
+bool positions_equal(position_t *p1, position_t *p2) {
+  bool result = true;
+  if (p1->key != p2->key) {
+    printf("keys mismatch: p1: %" PRId64 ", p2: %" PRId64 "\n", p1->key, p2->key);
+    result = false;
+  }
+  for (color_t c = WHITE; c < 2; c++) {
+    if (p1->kloc[c] != p2->kloc[c]) {
+      printf("klocs for color %d mismatch. p1: %d p2: %d\n", c, p1->kloc[c], p2->kloc[c]);
+      result = false;
+    }
+  }
+  for (int i = 0; i < ARR_SIZE; i++) {
+    if (p1->board[i] != p1->board[i]) {
+      printf("piece for square %d mismatch. p1: %d p2: %d\n", i, p1->board[i], p2->board[i]);
+      result = false;
+    }
+  }
+  if (p1->ply != p2->ply) {
+    printf("ply mismatch. p1: %d, p2: %d\n", p1->ply, p2->ply);
+    result = false;
+  }
+
+  if (p1->victims.zapped_sq != p2->victims.zapped_sq) {
+    printf("zapped_sq mismatch. p1: %d, p2: %d\n", p1->victims.zapped_sq, p2->victims.zapped_sq);
+    result = false;
+  }
+
+  if (p1->victims.zapped != p2->victims.zapped) {
+    printf("zapped mismatch. p1: %d, p2: %d\n", p1->victims.zapped, p2->victims.zapped);
+    result = false;
+  }
+
+  if (p1->victims.stomped_sq != p2->victims.stomped_sq) {
+    printf("stomped_sq mismatch. p1: %d, p2: %d\n", p1->victims.stomped_sq, p2->victims.stomped_sq);
+    result = false;
+  }
+
+  if (p1->victims.stomped != p2->victims.stomped) {
+    printf("stomped mismatch. p1: %d, p2: %d\n", p1->victims.stomped, p2->victims.stomped);
+    result = false;
+  }
+
+  for (int i = 0; i < NUM_PAWNS; i++) {
+    bool found = false;
+    for (int j = 0; j < NUM_PAWNS; j++) {
+      if (p1->ploc[i] == p2->ploc[j]) {
+        found = true;
+      }
+    }
+    if (!found) {
+      result = false;
+      printf("pawn in p1 not found in p2: %d\n", p1->ploc[i]);
+    }
+  }
+  for (int i = 0; i < NUM_PAWNS; i++) {
+    bool found = false;
+    for (int j = 0; j < NUM_PAWNS; j++) {
+      if (p2->ploc[i] == p1->ploc[j]) {
+        found = true;
+      }
+    }
+    if (!found) {
+      result = false;
+      printf("pawn in p2 not found in p1: %d\n", p2->ploc[i]);
+    }
+  }
+
+  return result;
+}
+
 // King orientations
 char *king_ori_to_rep[2][NUM_ORI] = { { "NN", "EE", "SS", "WW" },
                                       { "nn", "ee", "ss", "ww" } };
@@ -366,59 +437,16 @@ void swap_positions(position_t * restrict old, position_t * restrict p) {
   }
 }
 
-inline square_t low_level_make_move(position_t * restrict old, position_t * restrict p, move_t mv) {
+inline square_t low_level_make_move(position_t * restrict p, move_t mv) {
   tbassert(mv != 0, "mv was zero.\n");
 
   square_t stomped_dst_sq = 0;
-
-  WHEN_DEBUG_VERBOSE(char buf[MAX_CHARS_IN_MOVE]);
-  WHEN_DEBUG_VERBOSE({
-      move_to_str(mv, buf, MAX_CHARS_IN_MOVE);
-      DEBUG_LOG(1, "low_level_make_move: %s\n", buf);
-    });
-
-  tbassert(old->key == compute_zob_key(old),
-           "old->key: %"PRIu64", zob-key: %"PRIu64"\n",
-           old->key, compute_zob_key(old));
-
-  WHEN_DEBUG_VERBOSE({
-      fprintf(stderr, "Before:\n");
-      display(old);
-    });
 
   square_t from_sq = from_square(mv);
   square_t to_sq = to_square(mv);
   rot_t rot = rot_of(mv);
 
-  WHEN_DEBUG_VERBOSE({
-      DEBUG_LOG(1, "low_level_make_move 2:\n");
-      square_to_str(from_sq, buf, MAX_CHARS_IN_MOVE);
-      DEBUG_LOG(1, "from_sq: %s\n", buf);
-      square_to_str(to_sq, buf, MAX_CHARS_IN_MOVE);
-      DEBUG_LOG(1, "to_sq: %s\n", buf);
-      switch (rot) {
-        case NONE:
-          DEBUG_LOG(1, "rot: none\n");
-          break;
-        case RIGHT:
-          DEBUG_LOG(1, "rot: R\n");
-          break;
-        case UTURN:
-          DEBUG_LOG(1, "rot: U\n");
-          break;
-        case LEFT:
-          DEBUG_LOG(1, "rot: L\n");
-          break;
-        default:
-          tbassert(false, "Not like a boss at all.\n");  // Bad, bad, bad
-          break;
-      }
-    });
-
-  swap_positions(old, p);
-
-  p->history = old;
-  p->last_move = mv;
+  p->ply++;
 
   tbassert(from_sq < ARR_SIZE && from_sq > 0, "from_sq: %d\n", from_sq);
   tbassert(p->board[from_sq] < (1 << PIECE_SIZE) && p->board[from_sq] >= 0,
@@ -494,11 +522,6 @@ inline square_t low_level_make_move(position_t * restrict old, position_t * rest
            "p->key: %"PRIu64", zob-key: %"PRIu64"\n",
            p->key, compute_zob_key(p));
 
-  WHEN_DEBUG_VERBOSE({
-      fprintf(stderr, "After:\n");
-      display(p);
-    });
-
   return stomped_dst_sq;
 }
 
@@ -541,28 +564,23 @@ square_t fire(position_t *p) {
 
 
 // return victim pieces or KO
-victims_t make_move(position_t *old, position_t *p, move_t mv) {
+victims_t make_move(position_t *p, move_t mv) {
   tbassert(mv != 0, "mv was zero.\n");
 
-  WHEN_DEBUG_VERBOSE(char buf[MAX_CHARS_IN_MOVE]);
+  uint64_t old_key = p->key;
 
   // move phase 1 - moving a piece, which may result in a stomp
-  square_t stomped_sq = low_level_make_move(old, p, mv);
-
-  WHEN_DEBUG_VERBOSE({
-      if (stomped_sq != 0) {
-        square_to_str(stomped_sq, buf, MAX_CHARS_IN_MOVE);
-        DEBUG_LOG(1, "Stomping piece on %s\n", buf);
-      }
-    });
+  square_t stomped_sq = low_level_make_move(p, mv);
 
   if (stomped_sq == 0) {
     p->victims.stomped = 0;
+    p->victims.stomped_sq = 0;
 
     // Don't check for Ko yet.
 
   } else {  // we definitely stomped something
     p->victims.stomped = p->board[stomped_sq];
+    p->victims.stomped_sq = stomped_sq;
 
     p->key ^= zob[stomped_sq][p->victims.stomped];   // remove from board
     p->board[stomped_sq] = 0;
@@ -577,33 +595,24 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     tbassert(p->key == compute_zob_key(p),
              "p->key: %"PRIu64", zob-key: %"PRIu64"\n",
              p->key, compute_zob_key(p));
-
-    WHEN_DEBUG_VERBOSE({
-        square_to_str(stomped_sq, buf, MAX_CHARS_IN_MOVE);
-        DEBUG_LOG(1, "Stomped piece on %s\n", buf);
-      });
   }
+
 
   // move phase 2 - shooting the laser
   square_t victim_sq = fire(p);
 
-  WHEN_DEBUG_VERBOSE({
-      if (victim_sq != 0) {
-        square_to_str(victim_sq, buf, MAX_CHARS_IN_MOVE);
-        DEBUG_LOG(1, "Zapping piece on %s\n", buf);
-      }
-    });
-
   if (victim_sq == 0) {
     p->victims.zapped = 0;
+    p->victims.zapped_sq = 0;
 
     if (USE_KO &&  // Ko rule
         zero_victims(p->victims) &&
-        (p->key == (old->key ^ zob_color))) {
+        (p->key == (old_key ^ zob_color))) {
       return KO();
     }
   } else {  // we definitely hit something with laser
     p->victims.zapped = p->board[victim_sq];
+    p->victims.zapped_sq = victim_sq;
     p->key ^= zob[victim_sq][p->victims.zapped];   // remove from board
     p->board[victim_sq] = 0;
     for (int i = 0; i < NUM_PAWNS; i++) {
@@ -617,94 +626,93 @@ victims_t make_move(position_t *old, position_t *p, move_t mv) {
     tbassert(p->key == compute_zob_key(p),
              "p->key: %"PRIu64", zob-key: %"PRIu64"\n",
              p->key, compute_zob_key(p));
-
-    WHEN_DEBUG_VERBOSE({
-        square_to_str(victim_sq, buf, MAX_CHARS_IN_MOVE);
-        DEBUG_LOG(1, "Zapped piece on %s\n", buf);
-      });
   }
 
   return p->victims;
 }
 
-// helper function for do_perft
-// ply starting with 0
-static uint64_t perft_search(position_t *p, int depth, int ply) {
-  uint64_t node_count = 0;
-  position_t np;
-  sortable_move_t lst[MAX_NUM_MOVES];
-  int num_moves;
-  int i;
+void unmake_move(position_t *p, move_t mv, victims_t victims, victims_t parent_victims) {
+  // first undo the things that we did in make_move
 
-  if (depth == 0) {
-    return 1;
-  }
+  p->victims = parent_victims;
 
-  num_moves = generate_all_opt(p, lst, true);
-
-  if (depth == 1) {
-    return num_moves;
-  }
-
-  for (i = 0; i < num_moves; i++) {
-    move_t mv = get_move(lst[i]);
-
-    square_t stomped_sq = low_level_make_move(p, &np, mv);  // make the move baby!
+  // unfire the laser
+  if (victims.zapped_sq > 0) { // handles non stomped sq and also KO
+    p->key ^= zob[victims.zapped_sq][0];
     for (int i = 0; i < NUM_PAWNS; i++) {
-      if (stomped_sq == p->ploc[i]) {
-        p->ploc[i] = 0;
+      if (p->ploc[i] == 0) {
+        p->ploc[i] = victims.zapped_sq;
         break;
       }
     }
-
-    if (stomped_sq != 0) {
-      tbassert(ptype_of(np.board[stomped_sq]) == PAWN,
-               "ptype_of(np.board[stomped_sq]): %d\n",
-               ptype_of(np.board[stomped_sq]));
-
-      np.victims.stomped = np.board[stomped_sq];
-      np.key ^= zob[stomped_sq][np.victims.stomped];   // remove from board
-      np.board[stomped_sq] = 0;
-      np.key ^= zob[stomped_sq][0];
-    }
-
-    square_t victim_sq = fire(&np);  // the guy to disappear
-
-    if (victim_sq != 0) {            // hit a piece
-      ptype_t typ = ptype_of(np.board[victim_sq]);
-      tbassert((typ != EMPTY) && (typ != INVALID), "typ: %d\n", typ);
-      if (typ == KING) {  // do not expand further: hit a King
-        node_count++;
-        continue;
-      }
-      np.victims.zapped = np.board[victim_sq];
-      np.key ^= zob[victim_sq][np.victims.zapped];   // remove from board
-      for (int i = 0; i < NUM_PAWNS; i++) {
-        if (victim_sq == np.ploc[i]) {
-          np.ploc[i] = 0;
-          break;
-        }
-      }
-      np.board[victim_sq] = 0;
-      np.key ^= zob[victim_sq][0];
-    }
-
-    uint64_t partialcount = perft_search(&np, depth-1, ply+1);
-    node_count += partialcount;
+    p->board[victims.zapped_sq] = victims.zapped;
+    p->key ^= zob[victims.zapped_sq][victims.zapped];
   }
 
-  return node_count;
+  // unstomp
+  if (victims.stomped_sq != 0) {
+    p->key ^= zob[victims.stomped_sq][0];
+    for (int i = 0; i < NUM_PAWNS; i++) {
+      if (p->ploc[i] == 0) {
+        p->ploc[i] = victims.stomped_sq;
+        break;
+      }
+    }
+    p->key ^= zob[victims.stomped_sq][victims.stomped];
+    p->board[victims.stomped_sq] = victims.stomped;
+  }
+
+  square_t from_sq = from_square(mv);
+  square_t to_sq = to_square(mv);
+  rot_t rot = rot_of(mv);
+  piece_t from_piece = p->board[from_sq];
+  piece_t to_piece = p->board[to_sq];
+  ptype_t from_type = ptype_of(from_piece);
+  ptype_t to_type = ptype_of(to_piece);
+  color_t from_color = color_of(from_piece);
+  color_t to_color = color_of(to_piece);
+
+
+  // now undo the things we did in low level make move
+  if (to_sq != from_sq) { // move, not rotation
+    if (to_type == KING) {
+      p->kloc[to_color] = from_sq;
+    }
+    if (from_type == KING) {
+      p->kloc[from_color] = to_sq;
+    }
+
+    p->key ^= zob[from_sq][to_piece];  // place to_piece in from_sq
+    p->key ^= zob[to_sq][from_piece];  // place from_piece in to_sq
+
+    p->board[from_sq] = from_piece;
+    p->board[to_sq] = to_piece;
+
+    p->key ^= zob[from_sq][from_piece];  // remove from_piece from from_sq
+    p->key ^= zob[to_sq][to_piece];  // remove to_piece from to_sq
+
+    if (PAWN == to_type && EMPTY == from_type) {
+      for (int i = 0; i < NUM_PAWNS; i++) {
+        if (p->ploc[i] == to_sq) {
+          p->ploc[i] = from_sq;
+        }
+      }
+    }
+  } else { // rotation
+    p->key ^= zob[from_sq][from_piece];
+    set_ori(&from_piece, ori_of(from_piece) - rot);
+    p->board[from_sq] = from_piece;
+    p->key ^= zob[from_sq][from_piece];
+  }
+
+  p->key ^= zob_color;
+
+  p->ply--;
 }
 
 // help to verify the move generator
 void do_perft(position_t *gme, int depth, int ply) {
   fen_to_pos(gme, "");
-
-  for (int d = 1; d <= depth; d++) {
-    printf("perft %2d ", d);
-    uint64_t j = perft_search(gme, d, 0);
-    printf("%" PRIu64 "\n", j);
-  }
 }
 
 void display(position_t *p) {
@@ -717,13 +725,6 @@ void display(position_t *p) {
   printf("info White King: %s, ", buf);
   square_to_str(p->kloc[BLACK], buf, MAX_CHARS_IN_MOVE);
   printf("info Black King: %s\n", buf);
-
-  if (p->last_move != 0) {
-    move_to_str(p->last_move, buf, MAX_CHARS_IN_MOVE);
-    printf("info Last move: %s\n", buf);
-  } else {
-    printf("info Last move: NULL\n");
-  }
 
   for (rnk_t r = BOARD_WIDTH - 1; r >=0 ; --r) {
     printf("\ninfo %1d  ", r);
