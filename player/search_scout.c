@@ -87,11 +87,6 @@ static score_t scout_search(searchNode *node, int depth,
 
   int number_of_moves_evaluated = 0;
 
-
-  // A simple mutex. See simple_mutex.h for implementation details.
-  simple_mutex_t node_mutex;
-  init_simple_mutex(&node_mutex);
- 
   int bound = BEST_MOVE_HEADER < num_of_moves ? BEST_MOVE_HEADER : num_of_moves;
   for (int mv_index = 0; mv_index < bound; mv_index++) {
     // Sort up to number_of_moves_evaluated
@@ -131,21 +126,22 @@ static score_t scout_search(searchNode *node, int depth,
     }
   }
 
+  // A simple mutex. See simple_mutex.h for implementation details.
+  simple_mutex_t node_mutex;
+  init_simple_mutex(&node_mutex);
+
   if (!node->abort) {
     // sort rest of the array, not sort_incremental
     // sort_incremental(move_list, num_of_moves, number_of_moves_evaluated); //possible race
     ref_sort_full(move_list, num_of_moves); // point to bound-th entry in move_list since others are already checked.
     cilk_for (int mv_index = BEST_MOVE_HEADER; mv_index < num_of_moves; mv_index++) {
       do {
-        if (node->abort) continue;
         // check parent's abort
         // propogate abort information - parallel_parent_aborted
-        
-        // simple_acquire(&node_mutex);
-        // Sort up to number_of_moves_evaluated
-        // int local_index = number_of_moves_evaluated++; // check equivilance
+        if (node->abort) continue;
+
+        // Shared index getting incremented and handed to this iteration
         int local_index = __sync_fetch_and_add(&number_of_moves_evaluated, 1);
-        // simple_release(&node_mutex);
 
         // Get the next move from the move list.
         move_t mv = get_move(move_list[local_index]);

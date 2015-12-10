@@ -480,35 +480,4 @@ void ref_sort_full(sortable_move_t *move_list, int num_of_moves) {
   }
 }
 
-// // full sort of the move list
-// // quicksort coarsened with insertion sort
-// void ref_sort_full(sortable_move_t *move_list, int num_of_moves) {
-//   quicksort(move_list, 0, num_of_moves);
-// }
 
-// void quicksort(sortable_move_t *move_list, int lo, int hi) {
-//   if (lo < hi) {
-//     int p = partition(move_list, lo, hi);
-//     quicksort(move_list, lo, p-1);
-//     quicksort(move_list, p, hi);
-//   }
-// }
-
-// int partition(sortable_move_t *move_list, int lo, int hi) {
-//   int pivot = move_list[hi];
-//   int i = lo;
-//   for (int j = lo; j < hi; j++) {
-//     if (move_list[j] < pivot){
-//       //swap move_list[i] with move_list[j] - no temp swap?
-//       sortable_move_t tmp = move_list[i];
-//       move_list[i] = move_list[j];
-//       move_list[j] = tmp;
-//       i++;
-//     }
-//   }
-//   // swap move_list[i] with move_list[hi]
-//   sortable_move_t tmp = move_list[i];
-//   move_list[i] = move_list[hi];
-//   move_list[hi] = tmp;
-//   return i;
-// }

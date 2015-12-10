@@ -14,15 +14,10 @@ void init_simple_mutex(simple_mutex_t* mutex) {
 void simple_acquire(simple_mutex_t* mutex) {
   while (!__sync_bool_compare_and_swap(mutex, 0, 1)) {
     _mm_pause();
-    //usleep(1);
-    //continue;  // Did not acquire lock yet.
   }
 }
 
 void simple_release(simple_mutex_t* mutex) {
-  /*if (!__sync_bool_compare_and_swap(mutex, 1, 0)) {
-    printf("ERROR!\n");
-  }*/
   *mutex = 0;
 }
 
