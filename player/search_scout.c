@@ -50,6 +50,59 @@ static void initialize_scout_node(searchNode *node, int depth) {
   node->abort = false;
 }
 
+static void inline parallel_scout(sortable_move_t *move_list, int num_of_moves,
+                    searchNode *node, simple_mutex_t *mutex_ref,
+                    uint64_t *node_count_serial, int offset,
+                    move_t killer_a, move_t killer_b) {
+  printf("parallel_scout %p, %p, %i\n", move_list, move_list + num_of_moves, num_of_moves);
+  ref_sort_full(move_list, num_of_moves);
+  for (int mv_index = 0; mv_index < num_of_moves; mv_index++) {
+    /*sort_incremental(move_list, num_of_moves, mv_index);*/
+    do {
+      // check parent's abort
+      // propogate abort information - parallel_parent_aborted
+      if (node->abort) continue;
+
+      // Get the next move from the move list.
+      move_t mv = get_move(move_list[mv_index]);
+
+      if (TRACE_MOVES) {
+        print_move_info(mv, node->ply);
+      }
+
+      // increase node count
+      __sync_fetch_and_add(node_count_serial, 1);
+
+      moveEvaluationResult result;
+      evaluateMove(node, mv, killer_a, killer_b,
+          SEARCH_SCOUT,
+          node_count_serial,
+          &result);
+
+      if (result.type == MOVE_ILLEGAL || result.type == MOVE_IGNORE
+          || abortf || parallel_parent_aborted(node)) {
+        continue;
+      }
+
+      // A legal move is a move that's not KO, but when we are in quiescence
+      // we only want to count moves that has a capture.
+      if (result.type == MOVE_EVALUATED) {
+        __sync_fetch_and_add(&node->legal_move_count, 1);
+      }
+      simple_acquire(mutex_ref);
+      // process the score. Note that this mutates fields in node.
+      bool cutoff = search_process_score(node, mv, offset + mv_index, &result, SEARCH_SCOUT);
+      simple_release(mutex_ref);
+      if (cutoff) {
+        printf("cutoff " PRIu64 "\n", move_list[mv_index]);
+        node->abort = true;
+        continue;
+      }
+    } while (false);
+  }
+}
+
+
 static score_t scout_search(searchNode *node, int depth,
                             uint64_t *node_count_serial) {
   // Initialize the search node.
@@ -131,54 +184,45 @@ static score_t scout_search(searchNode *node, int depth,
   init_simple_mutex(&node_mutex);
 
   if (!node->abort) {
-    // sort rest of the array, not sort_incremental
-    // sort_incremental(move_list, num_of_moves, number_of_moves_evaluated); //possible race
-    ref_sort_full(move_list, num_of_moves); // point to bound-th entry in move_list since others are already checked.
-    cilk_for (int mv_index = BEST_MOVE_HEADER; mv_index < num_of_moves; mv_index++) {
-      do {
-        // check parent's abort
-        // propogate abort information - parallel_parent_aborted
-        if (node->abort) continue;
-
-        // Shared index getting incremented and handed to this iteration
-        int local_index = __sync_fetch_and_add(&number_of_moves_evaluated, 1);
-
-        // Get the next move from the move list.
-        move_t mv = get_move(move_list[local_index]);
-
-        if (TRACE_MOVES) {
-          print_move_info(mv, node->ply);
-        }
-
-        // increase node count
-        __sync_fetch_and_add(node_count_serial, 1);
-
-        moveEvaluationResult result;
-        evaluateMove(node, mv, killer_a, killer_b,
-                     SEARCH_SCOUT,
-                     node_count_serial,
-                     &result);
-
-        if (result.type == MOVE_ILLEGAL || result.type == MOVE_IGNORE
-            || abortf || parallel_parent_aborted(node)) {
-          continue;
-        }
-
-        // A legal move is a move that's not KO, but when we are in quiescence
-        // we only want to count moves that has a capture.
-        if (result.type == MOVE_EVALUATED) {
-          __sync_fetch_and_add(&node->legal_move_count, 1);
-        }
-        simple_acquire(&node_mutex);
-        // process the score. Note that this mutates fields in node.
-        bool cutoff = search_process_score(node, mv, local_index, &result, SEARCH_SCOUT);
-        simple_release(&node_mutex);
-        if (cutoff) {
-          node->abort = true;
-          continue;
-        }
-      } while (false);
+    printf("----------------- %i\n", num_of_moves);
+    int new_size = (num_of_moves - BEST_MOVE_HEADER) / 8;
+    for (int i = BEST_MOVE_HEADER + 7 * new_size; i < num_of_moves; i++) {
+      printf("%" PRIu64 " ", move_list[i]);
     }
+    printf("\n");
+    cilk_spawn parallel_scout(move_list + BEST_MOVE_HEADER + new_size, new_size,
+                              node, &node_mutex,
+                              node_count_serial, BEST_MOVE_HEADER + new_size,
+                              killer_a, killer_b);
+    cilk_spawn parallel_scout(move_list + BEST_MOVE_HEADER + 2 * new_size, new_size,
+                              node, &node_mutex,
+                              node_count_serial, BEST_MOVE_HEADER + new_size,
+                              killer_a, killer_b);
+    cilk_spawn parallel_scout(move_list + BEST_MOVE_HEADER + 3 * new_size, new_size,
+                              node, &node_mutex,
+                              node_count_serial, BEST_MOVE_HEADER + new_size,
+                              killer_a, killer_b);
+    cilk_spawn parallel_scout(move_list + BEST_MOVE_HEADER + 4 * new_size, new_size,
+                              node, &node_mutex,
+                              node_count_serial, BEST_MOVE_HEADER + new_size,
+                              killer_a, killer_b);
+    cilk_spawn parallel_scout(move_list + BEST_MOVE_HEADER + 5 * new_size, new_size,
+                              node, &node_mutex,
+                              node_count_serial, BEST_MOVE_HEADER + new_size,
+                              killer_a, killer_b);
+    cilk_spawn parallel_scout(move_list + BEST_MOVE_HEADER + 6 * new_size, new_size,
+                              node, &node_mutex,
+                              node_count_serial, BEST_MOVE_HEADER + new_size,
+                              killer_a, killer_b);
+    cilk_spawn parallel_scout(move_list + BEST_MOVE_HEADER + 7 * new_size, new_size,
+                              node, &node_mutex,
+                              node_count_serial, BEST_MOVE_HEADER + new_size,
+                              killer_a, killer_b);
+
+    parallel_scout(move_list + BEST_MOVE_HEADER, new_size, node, &node_mutex,
+                   node_count_serial, BEST_MOVE_HEADER,
+                   killer_a, killer_b);
+    cilk_sync;
   }
 
   if (parallel_parent_aborted(node)) {
